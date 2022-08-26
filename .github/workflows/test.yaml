@@ -21,7 +21,7 @@ jobs:
         black --check --diff .
     - name: Lint application with flake8
       run: |
-        flake8 domsed --count --show-source --statistics
+        flake8 . --count --show-source --statistics
     - name: Lint project with isort
       run: |
         black --check --diff .
