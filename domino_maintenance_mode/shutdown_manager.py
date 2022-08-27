@@ -53,7 +53,7 @@ class ExecutionTypeInterface(ABC):
         pass
 
     @abstractmethod
-    def list_running(self) -> List[Execution]:
+    def list_running(self, project_ids: List[str]) -> List[Execution]:
         """List non-stopped (running or pending) executions."""
         pass
 
@@ -87,23 +87,38 @@ class ShutdownManager:
 
     def __init__(
         self,
-        interface: ExecutionTypeInterface,
         batch_size: int = 5,
         batch_interval_s: int = 30,
         max_failures: int = 5,
         grace_period_s: int = 600,
     ):
-        self.interface = interface
-        self.typ = interface.singular()
         self.batch_size = batch_size
         self.batch_interval_s = batch_interval_s
         self.grace_period_s = grace_period_s
         self.max_failures = max_failures
+        self.project_ids = self.fetch_projects()
+        logger.info(f"Initialized, found {len(self.project_ids)} projects.")
 
-    def shutdown(self):
+    def fetch_projects(self) -> List[str]:
+        api_key = os.environ["DOMINO_API_KEY"]
+        hostname = os.environ["DOMINO_HOSTNAME"]
+
+        data = requests.get(
+            f"{hostname}/v4/projects",
+            headers={
+                "Content-Type": "application/json",
+                "X-Domino-Api-Key": api_key,
+            },
+        ).json()
+        return list(map(lambda project: project["id"], data))
+
+    def shutdown(self, interface: ExecutionTypeInterface):
+        self.interface = interface
+        self.typ = interface.singular()
+
         logger.info(f"Shutting down {self.typ}s")
 
-        running_executions = self.interface.list_running()
+        running_executions = self.interface.list_running(self.project_ids)
         logger.debug(running_executions)
         logger.info(f"Found {len(running_executions)} running {self.typ}(s)")
 
@@ -114,14 +129,14 @@ class ShutdownManager:
                 return
 
             self.executions = running_executions
-            self.failed = []
-            self.stopping = []
-            self.batch_stop()
-            self.wait()
+            self.failed: List[Execution] = []
+            self.stopping: List[Execution] = []
+            self.__batch_stop()
+            self.__wait()
 
         logger.info(f"{self.typ}s successfully shut down.")
 
-    def batch_stop(self):
+    def __batch_stop(self):
         while len(self.executions) > 0:
             batch = [
                 self.executions.pop()
@@ -129,7 +144,7 @@ class ShutdownManager:
             ]
 
             for execution in batch:
-                self.stop_execution(execution)
+                self.__stop_execution(execution)
 
             if len(self.executions) > 0:
                 logger.info(
@@ -137,7 +152,7 @@ class ShutdownManager:
                 )
                 time.sleep(self.batch_interval_s)
 
-    def stop_execution(self, execution: Execution):
+    def __stop_execution(self, execution: Execution):
         try:
             self.interface.stop(execution._id)
             logger.info(f"Stopped {self.typ} '{execution.name}'")
@@ -157,7 +172,7 @@ class ShutdownManager:
                 )
                 self.failed.append(execution)
 
-    def wait(self):
+    def __wait(self):
         logger.info(
             f"Waiting up to {self.grace_period_s}s for {self.typ}s to stop."
         )
