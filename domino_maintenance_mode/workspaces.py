@@ -35,7 +35,6 @@ class Interface(ExecutionTypeInterface[WorkspaceId]):
         project_lookup = {
             (project.owner, project.name): project._id for project in projects
         }
-        from pprint import pprint
 
         offset = 1000
         limit = 50
@@ -49,7 +48,6 @@ class Interface(ExecutionTypeInterface[WorkspaceId]):
                 ]
                 entry["projectId"] = project_id
                 workspaces[entry["workspaceId"]] = entry
-                pprint(entry)
             if len(workspaces) >= data["totalEntries"]:
                 break
             offset += 1
