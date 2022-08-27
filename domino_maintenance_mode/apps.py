@@ -1,9 +1,6 @@
 import logging
-import os
 from pprint import pformat
 from typing import List
-
-import requests
 
 from domino_maintenance_mode.shutdown_manager import (
     Execution,
@@ -16,18 +13,12 @@ STOPPED_STATES = {"Stopped"}
 RUNNING_STATES = {"Running"}
 
 
-class AppInterface(ExecutionTypeInterface):
-    api_key = os.environ["DOMINO_API_KEY"]
-    hostname = os.environ["DOMINO_HOSTNAME"]
+class Interface(ExecutionTypeInterface):
+    def singular(self) -> str:
+        return "App"
 
     def list_running(self) -> List[Execution]:
-        data = requests.get(
-            f"{self.hostname}/v4/modelProducts",
-            headers={
-                "Content-Type": "application/json",
-                "X-Domino-Api-Key": self.api_key,
-            },
-        ).json()
+        data = self.get("/v4/modelProducts")
         executions = []
         for app in data:
             logger.debug(pformat(app))
@@ -44,45 +35,15 @@ class AppInterface(ExecutionTypeInterface):
         return executions
 
     def stop(self, _id: str):
-        response = requests.post(
-            f"{self.hostname}/v4/modelProducts/{_id}/stop",
-            headers={
-                "Content-Type": "application/json",
-                "X-Domino-Api-Key": self.api_key,
-            },
-        )
-        logger.debug(response.text)
-        assert response.status_code == 200
+        self.post(f"/v4/modelProducts/{_id}/stop")
 
     def start(self, _id: str):
-        response = requests.post(
-            f"{self.hostname}/v4/modelProducts/{_id}/start",
-            headers={
-                "Content-Type": "application/json",
-                "X-Domino-Api-Key": self.api_key,
-            },
-        )
-        logger.debug(response.text)
-        assert response.status_code == 200
+        self.post(f"/v4/modelProducts/{_id}/start")
 
     def is_stopped(self, _id: str) -> bool:
-        data = requests.get(
-            f"{self.hostname}/v4/modelProducts/{_id}",
-            headers={
-                "Content-Type": "application/json",
-                "X-Domino-Api-Key": self.api_key,
-            },
-        ).json()
-        logger.debug(pformat(data))
+        data = self.get(f"/v4/modelProducts/{_id}")
         return data["status"] in STOPPED_STATES
 
     def is_running(self, _id: str) -> bool:
-        data = requests.get(
-            f"{self.hostname}/v4/modelProducts/{_id}",
-            headers={
-                "Content-Type": "application/json",
-                "X-Domino-Api-Key": self.api_key,
-            },
-        ).json()
-        logger.debug(pformat(data))
+        data = self.get(f"/v4/modelProducts/{_id}")
         return data["status"] in RUNNING_STATES

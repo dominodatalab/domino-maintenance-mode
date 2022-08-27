@@ -4,7 +4,7 @@ import os
 
 import click
 
-from domino_maintenance_mode.apps import AppInterface
+from domino_maintenance_mode.apps import Interface as AppInterface
 from domino_maintenance_mode.shutdown_manager import ShutdownManager
 
 
@@ -17,7 +17,7 @@ def cli():
 def begin():
     print("Begin")
 
-    app_manager = ShutdownManager("App", AppInterface())
+    app_manager = ShutdownManager(AppInterface())
     app_manager.shutdown()
 
 

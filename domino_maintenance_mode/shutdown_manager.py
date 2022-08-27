@@ -1,8 +1,11 @@
 import logging
+import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +18,40 @@ class Execution:
 
 
 class ExecutionTypeInterface(ABC):
+    def __init__(self):
+        api_key = os.environ["DOMINO_API_KEY"]
+        self.hostname = os.environ["DOMINO_HOSTNAME"]
+        # TODO: Ability to trust custom certs?
+        self.session = requests.Session()
+        self.session.headers.update(
+            {
+                "Content-Type": "application/json",
+                "X-Domino-Api-Key": api_key,
+            }
+        )
+
+    def get(self, path: str, success_code: int = 200) -> dict:
+        response = self.session.get(f"{self.hostname}{path}")
+        if response.status_code != success_code:
+            raise Exception(
+                f"API returned error ({response.status_code}): {response.text}"
+            )
+        return response.json()
+
+    def post(
+        self, path: str, json: Optional[dict] = None, success_code: int = 200
+    ) -> dict:
+        response = self.session.post(f"{self.hostname}{path}", json=json)
+        if response.status_code != success_code:
+            raise Exception(
+                f"API returned error ({response.status_code}): {response.text}"
+            )
+        return response.json()
+
+    @abstractmethod
+    def singular(self) -> str:
+        pass
+
     @abstractmethod
     def list_running(self) -> List[Execution]:
         """List non-stopped (running or pending) executions."""
@@ -50,7 +87,6 @@ class ShutdownManager:
 
     def __init__(
         self,
-        typ: str,
         interface: ExecutionTypeInterface,
         batch_size: int = 5,
         batch_interval_s: int = 30,
@@ -58,7 +94,7 @@ class ShutdownManager:
         grace_period_s: int = 600,
     ):
         self.interface = interface
-        self.typ = typ
+        self.typ = interface.singular()
         self.batch_size = batch_size
         self.batch_interval_s = batch_interval_s
         self.grace_period_s = grace_period_s
