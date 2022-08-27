@@ -17,7 +17,7 @@ def cli():
 def begin():
     print("Begin")
 
-    app_manager = ShutdownManager(AppInterface())
+    app_manager = ShutdownManager("App", AppInterface())
     app_manager.shutdown()
 
 

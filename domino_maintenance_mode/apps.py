@@ -30,7 +30,7 @@ class AppInterface(ExecutionTypeInterface):
         ).json()
         executions = []
         for app in data:
-            logger.info(pformat(app))
+            logger.debug(pformat(app))
             try:
                 if app["status"] in STOPPED_STATES:
                     continue

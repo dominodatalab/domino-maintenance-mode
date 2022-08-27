@@ -24,7 +24,7 @@ jobs:
         flake8 . --count --show-source --statistics
     - name: Lint project with isort
       run: |
-        black --check --diff .
+        isort --check --diff .
     - name: Check application with mypy
       run: |
         mypy .
