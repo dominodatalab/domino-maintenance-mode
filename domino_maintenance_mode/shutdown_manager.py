@@ -57,6 +57,16 @@ class ExecutionTypeInterface(ABC, Generic[Id]):
             )
         return response.json()
 
+    def put(
+        self, path: str, json: Optional[dict] = None, success_code: int = 200
+    ) -> dict:
+        response = self.session.put(f"{self.hostname}{path}", json=json)
+        if response.status_code != success_code:
+            raise Exception(
+                f"API returned error ({response.status_code}): {response.text}"
+            )
+        return response.json()
+
     @abstractmethod
     def singular(self) -> str:
         pass
