@@ -3,21 +3,30 @@ import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Generic, List, Optional, TypeVar
 
 import requests
 
 logger = logging.getLogger(__name__)
 
+Id = TypeVar("Id")
+
 
 @dataclass
-class Execution:
+class Execution(Generic[Id]):
+    _id: Id
+    name: str
+    owner: str
+
+
+@dataclass
+class Project:
     _id: str
     name: str
     owner: str
 
 
-class ExecutionTypeInterface(ABC):
+class ExecutionTypeInterface(ABC, Generic[Id]):
     def __init__(self):
         api_key = os.environ["DOMINO_API_KEY"]
         self.hostname = os.environ["DOMINO_HOSTNAME"]
@@ -53,27 +62,27 @@ class ExecutionTypeInterface(ABC):
         pass
 
     @abstractmethod
-    def list_running(self, project_ids: List[str]) -> List[Execution]:
+    def list_running(self, projects: List[Project]) -> List[Execution[Id]]:
         """List non-stopped (running or pending) executions."""
         pass
 
     @abstractmethod
-    def stop(self, _id: str):
+    def stop(self, _id: Id):
         """Initiate shutdown of an execution. Throws exception on failure."""
         pass
 
     @abstractmethod
-    def start(self, _id: str):
+    def start(self, _id: Id):
         """Initiate launch of an execution. Throws exception on failure."""
         pass
 
     @abstractmethod
-    def is_running(self, _id: str) -> bool:
+    def is_running(self, _id: Id) -> bool:
         """Is the execution in a stopped state."""
         pass
 
     @abstractmethod
-    def is_stopped(self, _id: str) -> bool:
+    def is_stopped(self, _id: Id) -> bool:
         """Is the execution fully running."""
         pass
 
@@ -96,10 +105,10 @@ class ShutdownManager:
         self.batch_interval_s = batch_interval_s
         self.grace_period_s = grace_period_s
         self.max_failures = max_failures
-        self.project_ids = self.fetch_projects()
-        logger.info(f"Initialized, found {len(self.project_ids)} projects.")
+        self.projects = self.__fetch_projects()
+        logger.info(f"Initialized, found {len(self.projects)} projects.")
 
-    def fetch_projects(self) -> List[str]:
+    def __fetch_projects(self) -> List[Project]:
         api_key = os.environ["DOMINO_API_KEY"]
         hostname = os.environ["DOMINO_HOSTNAME"]
 
@@ -110,7 +119,14 @@ class ShutdownManager:
                 "X-Domino-Api-Key": api_key,
             },
         ).json()
-        return list(map(lambda project: project["id"], data))
+        return list(
+            map(
+                lambda project: Project(
+                    project["id"], project["name"], project["ownerUsername"]
+                ),
+                data,
+            )
+        )
 
     def shutdown(self, interface: ExecutionTypeInterface):
         self.interface = interface
@@ -118,7 +134,7 @@ class ShutdownManager:
 
         logger.info(f"Shutting down {self.typ}s")
 
-        running_executions = self.interface.list_running(self.project_ids)
+        running_executions = self.interface.list_running(self.projects)
         logger.debug(running_executions)
         logger.info(f"Found {len(running_executions)} running {self.typ}(s)")
 
