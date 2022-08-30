@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from dataclasses import asdict
-from typing import Any, List
+from typing import Any, Dict, List
 
 import click
 
@@ -19,12 +19,24 @@ from domino_maintenance_mode.shutdown_manager import (
 )
 from domino_maintenance_mode.workspaces import Interface as WorkspaceInterface
 
-EXECUTION_INTERFACES: List[ExecutionTypeInterface[Any]] = [
+__INTERFACES: List[ExecutionTypeInterface[Any]] = [
     AppInterface(),
     ModelApiInterface(),
     WorkspaceInterface(),
     ScheduledJobInterface(),
 ]
+
+EXECUTION_INTERFACES: Dict[str, ExecutionTypeInterface[Any]] = {
+    interface.singular(): interface for interface in __INTERFACES
+}
+
+
+def __load_state(f) -> Dict[str, Any]:
+    state = {}
+    for k, v in json.load(f).items():
+        interface = EXECUTION_INTERFACES[k]
+        state[k] = list(map(interface.execution_from_dict, v))
+    return state
 
 
 @click.group()
@@ -46,7 +58,7 @@ def snapshot(output):
         interface.singular(): list(
             map(asdict, interface.list_running(projects))
         )
-        for interface in EXECUTION_INTERFACES
+        for interface in EXECUTION_INTERFACES.values()
     }
     json.dump(state, output)
 
@@ -55,7 +67,7 @@ cli.add_command(snapshot)
 
 
 @click.command()
-@click.argument("snapshot_path", type=click.File("r"))
+@click.argument("snapshot", type=click.File("r"))
 @click.option(
     "-b",
     "--batch-size",
@@ -90,26 +102,29 @@ cli.add_command(snapshot)
     default=600,
     help="Amount of time to wait for executions to complete.",
 )
-def shutdown(snapshot: str, **kwargs):
+def shutdown(snapshot, **kwargs):
     """Stop running Apps, Model APIs, Durable Workspaces, and Scheduled Jobs.
 
     SNAPSHOT_PATH : The path to snapshot output from 'dmm snapshot'.
     """
-    print("Shutdown")
-    print(kwargs)
+    state = __load_state(snapshot)
     shutdown_manager = ShutdownManager(**kwargs)
-    for execution_interface in EXECUTION_INTERFACES:
-        shutdown_manager.shutdown(execution_interface, {})
+    for execution_interface in EXECUTION_INTERFACES.values():
+        shutdown_manager.shutdown(execution_interface, state)
 
 
 cli.add_command(shutdown)
 
 
 @click.command()
-@click.argument("snapshot_path", type=click.File("r"))
-def restore(snapshot_path: str):
+@click.argument("snapshot", type=click.File("r"))
+def restore(snapshot):
     """Restore previously running Apps, Model APIs, and Scheduled Jobs."""
-    print("Restore")
+    # state = __load_state(snapshot)
+    for interface in EXECUTION_INTERFACES.values():
+        if interface.is_restartable():
+            # TODO
+            pass
 
 
 cli.add_command(restore)

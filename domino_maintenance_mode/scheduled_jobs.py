@@ -15,6 +15,9 @@ class ScheduledJobId:
 
 
 class Interface(ExecutionTypeInterface[ScheduledJobId]):
+    def id_from_value(self, v) -> ScheduledJobId:
+        return ScheduledJobId(**v)
+
     def singular(self) -> str:
         return "Scheduled Job"
 
@@ -58,3 +61,6 @@ class Interface(ExecutionTypeInterface[ScheduledJobId]):
     def is_running(self, _id: ScheduledJobId) -> bool:
         job = self.get(f"/v4/projects/{_id.projectId}/scheduledjobs/{_id.key}")
         return not job["isPaused"]
+
+    def is_restartable(self) -> bool:
+        return True

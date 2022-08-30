@@ -26,6 +26,9 @@ class WorkspaceId:
 
 
 class Interface(ExecutionTypeInterface[WorkspaceId]):
+    def id_from_value(self, v) -> WorkspaceId:
+        return WorkspaceId(**v)
+
     def singular(self) -> str:
         return "Workspace"
 
@@ -88,3 +91,6 @@ class Interface(ExecutionTypeInterface[WorkspaceId]):
             f"{BASE_PATH}/project/{_id.projectId}/workspace/{_id._id}"
         )
         return workspace["state"] in RUNNING_STATES
+
+    def is_restartable(self) -> bool:
+        return False

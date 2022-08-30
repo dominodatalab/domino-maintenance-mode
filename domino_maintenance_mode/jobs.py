@@ -37,3 +37,6 @@ class Interface(ExecutionTypeInterface[str]):
         # GET /jobs/{jobId}
         # statuses.executionStatus
         return True
+
+    def is_restartable(self) -> bool:
+        return False

@@ -48,3 +48,6 @@ class Interface(ExecutionTypeInterface[str]):
     def is_running(self, _id: str) -> bool:
         data = self.get(f"/v4/modelProducts/{_id}")
         return data["status"] in RUNNING_STATES
+
+    def is_restartable(self) -> bool:
+        return True

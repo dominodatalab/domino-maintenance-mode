@@ -27,6 +27,9 @@ class ModelVersionId:
 
 
 class Interface(ExecutionTypeInterface[ModelVersionId]):
+    def id_from_value(self, v) -> ModelVersionId:
+        return ModelVersionId(**v)
+
     def singular(self) -> str:
         return "Model API Version"
 
@@ -95,3 +98,6 @@ class Interface(ExecutionTypeInterface[ModelVersionId]):
             return version["deploymentStatus"]["name"] in RUNNING_STATES
         else:
             return True
+
+    def is_restartable(self) -> bool:
+        return True

@@ -32,3 +32,6 @@ class Interface(ExecutionTypeInterface[str]):
     def is_running(self, _id: str) -> bool:
         # TODO
         return True
+
+    def is_restartable(self) -> bool:
+        return False

@@ -60,6 +60,13 @@ class ExecutionTypeInterface(ABC, Generic[Id]):
             }
         )
 
+    def id_from_value(self, v) -> Id:
+        # Override for non-primitive Id types
+        return v
+
+    def execution_from_dict(self, d: dict) -> Execution[Id]:
+        return Execution(self.id_from_value(d["_id"]), d["name"], d["owner"])
+
     def get(self, path: str, success_code: int = 200) -> dict:
         response = self.session.get(f"{self.hostname}{path}")
         if response.status_code != success_code:
@@ -117,6 +124,12 @@ class ExecutionTypeInterface(ABC, Generic[Id]):
         """Is the execution fully running."""
         pass
 
+    @abstractmethod
+    def is_restartable(self) -> bool:
+        """Should this execution type be restarted after the maintenance window.
+        """
+        pass
+
 
 class ShutdownManager:
     batch_size: int
@@ -147,7 +160,6 @@ class ShutdownManager:
         running_executions = state[interface.singular()]
         logger.debug(running_executions)
         logger.info(f"Found {len(running_executions)} running {self.typ}(s)")
-
         if len(running_executions) > 0:
             if input(
                 "Are you sure you want to shut down these executions? "
