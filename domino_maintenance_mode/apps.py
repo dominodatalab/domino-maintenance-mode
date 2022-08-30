@@ -18,7 +18,7 @@ class Interface(ExecutionTypeInterface[str]):
     def singular(self) -> str:
         return "App"
 
-    def list_running(self, project_ids: List[Project]) -> List[Execution[str]]:
+    def list_running(self, projects: List[Project]) -> List[Execution[str]]:
         data = self.get("/v4/modelProducts")
         executions = []
         for app in data:

@@ -1,7 +1,9 @@
 # Entrypoint for Command Line
+import json
 import logging
 import os
-from typing import Any, List, Optional
+from dataclasses import asdict
+from typing import Any, List
 
 import click
 
@@ -13,6 +15,7 @@ from domino_maintenance_mode.scheduled_jobs import (
 from domino_maintenance_mode.shutdown_manager import (
     ExecutionTypeInterface,
     ShutdownManager,
+    fetch_projects,
 )
 from domino_maintenance_mode.workspaces import Interface as WorkspaceInterface
 
@@ -33,12 +36,19 @@ def cli():
 @click.option(
     "--output",
     default=None,
-    help="Specify particular output path (will not overwrite).",
-    type=click.Path(exists=False),
+    help="Specify output path (must not exist).",
+    type=click.File("x"),
 )
-def snapshot(output: Optional[str]):
+def snapshot(output):
     """Take a snapshot of running executions."""
-    print("Snapshot")
+    projects = fetch_projects()
+    state = {
+        interface.singular(): list(
+            map(asdict, interface.list_running(projects))
+        )
+        for interface in EXECUTION_INTERFACES
+    }
+    json.dump(state, output)
 
 
 cli.add_command(snapshot)
@@ -89,7 +99,7 @@ def shutdown(snapshot: str, **kwargs):
     print(kwargs)
     shutdown_manager = ShutdownManager(**kwargs)
     for execution_interface in EXECUTION_INTERFACES:
-        shutdown_manager.shutdown(execution_interface)
+        shutdown_manager.shutdown(execution_interface, {})
 
 
 cli.add_command(shutdown)

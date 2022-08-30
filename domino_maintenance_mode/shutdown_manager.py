@@ -26,6 +26,27 @@ class Project:
     owner: str
 
 
+def fetch_projects() -> List[Project]:
+    api_key = os.environ["DOMINO_API_KEY"]
+    hostname = os.environ["DOMINO_HOSTNAME"]
+
+    data = requests.get(
+        f"{hostname}/v4/projects",
+        headers={
+            "Content-Type": "application/json",
+            "X-Domino-Api-Key": api_key,
+        },
+    ).json()
+    return list(
+        map(
+            lambda project: Project(
+                project["id"], project["name"], project["ownerUsername"]
+            ),
+            data,
+        )
+    )
+
+
 class ExecutionTypeInterface(ABC, Generic[Id]):
     def __init__(self):
         api_key = os.environ["DOMINO_API_KEY"]
@@ -115,36 +136,15 @@ class ShutdownManager:
         self.batch_interval_s = batch_interval_s
         self.grace_period_s = grace_period_s
         self.max_failures = max_failures
-        self.projects = self.__fetch_projects()
-        logger.info(f"Initialized, found {len(self.projects)} projects.")
 
-    def __fetch_projects(self) -> List[Project]:
-        api_key = os.environ["DOMINO_API_KEY"]
-        hostname = os.environ["DOMINO_HOSTNAME"]
-
-        data = requests.get(
-            f"{hostname}/v4/projects",
-            headers={
-                "Content-Type": "application/json",
-                "X-Domino-Api-Key": api_key,
-            },
-        ).json()
-        return list(
-            map(
-                lambda project: Project(
-                    project["id"], project["name"], project["ownerUsername"]
-                ),
-                data,
-            )
-        )
-
-    def shutdown(self, interface: ExecutionTypeInterface):
+    def shutdown(self, interface: ExecutionTypeInterface, state: dict):
         self.interface = interface
         self.typ = interface.singular()
 
         logger.info(f"Shutting down {self.typ}s")
 
-        running_executions = self.interface.list_running(self.projects)
+        # running_executions = self.interface.list_running(self.projects)
+        running_executions = state[interface.singular()]
         logger.debug(running_executions)
         logger.info(f"Found {len(running_executions)} running {self.typ}(s)")
 

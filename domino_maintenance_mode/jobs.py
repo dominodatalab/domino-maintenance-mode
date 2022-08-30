@@ -11,7 +11,7 @@ class Interface(ExecutionTypeInterface[str]):
     def singular(self) -> str:
         return "Job"
 
-    def list_running(self, project_ids: List[Project]) -> List[Execution[str]]:
+    def list_running(self, projects: List[Project]) -> List[Execution[str]]:
         # TODO
         # Iterate Projects GET /projects/portfolio/getProjectPortfolio
         # GET /jobs?projectId
