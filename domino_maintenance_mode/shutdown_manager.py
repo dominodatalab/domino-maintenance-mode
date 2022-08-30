@@ -126,7 +126,8 @@ class ExecutionTypeInterface(ABC, Generic[Id]):
 
     @abstractmethod
     def is_restartable(self) -> bool:
-        """Should this execution type be restarted after the maintenance window.
+        """Should this execution type be restarted after
+        the maintenance window.
         """
         pass
 
