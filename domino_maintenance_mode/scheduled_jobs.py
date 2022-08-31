@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import List
 
-from domino_maintenance_mode.shutdown_manager import (
+from domino_maintenance_mode.execution_interface import (
     Execution,
-    ExecutionTypeInterface,
-    Project,
+    ExecutionInterface,
 )
+from domino_maintenance_mode.projects import Project
 
 
 @dataclass
@@ -14,7 +14,7 @@ class ScheduledJobId:
     projectId: str
 
 
-class Interface(ExecutionTypeInterface[ScheduledJobId]):
+class Interface(ExecutionInterface[ScheduledJobId]):
     def id_from_value(self, v) -> ScheduledJobId:
         return ScheduledJobId(**v)
 

@@ -8,25 +8,23 @@ from typing import Any, Dict, List
 import click
 
 from domino_maintenance_mode.apps import Interface as AppInterface
+from domino_maintenance_mode.execution_interface import ExecutionInterface
+from domino_maintenance_mode.manager import ShutdownManager
 from domino_maintenance_mode.model_apis import Interface as ModelApiInterface
+from domino_maintenance_mode.projects import fetch_projects
 from domino_maintenance_mode.scheduled_jobs import (
     Interface as ScheduledJobInterface,
 )
-from domino_maintenance_mode.shutdown_manager import (
-    ExecutionTypeInterface,
-    ShutdownManager,
-    fetch_projects,
-)
 from domino_maintenance_mode.workspaces import Interface as WorkspaceInterface
 
-__INTERFACES: List[ExecutionTypeInterface[Any]] = [
+__INTERFACES: List[ExecutionInterface[Any]] = [
     AppInterface(),
     ModelApiInterface(),
     WorkspaceInterface(),
     ScheduledJobInterface(),
 ]
 
-EXECUTION_INTERFACES: Dict[str, ExecutionTypeInterface[Any]] = {
+EXECUTION_INTERFACES: Dict[str, ExecutionInterface[Any]] = {
     interface.singular(): interface for interface in __INTERFACES
 }
 
@@ -45,14 +43,12 @@ def cli():
 
 
 @click.command()
-@click.option(
-    "--output",
-    default=None,
-    help="Specify output path (must not exist).",
-    type=click.File("x"),
-)
+@click.argument("output", type=click.File("x"))
 def snapshot(output):
-    """Take a snapshot of running executions."""
+    """Take a snapshot of running executions.
+
+    OUTPUT: Path to write snapshot file to. Must not exist.
+    """
     projects = fetch_projects()
     state = {
         interface.singular(): list(

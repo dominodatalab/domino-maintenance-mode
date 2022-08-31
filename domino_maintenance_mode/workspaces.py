@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import List
 
-from domino_maintenance_mode.shutdown_manager import (
+from domino_maintenance_mode.execution_interface import (
     Execution,
-    ExecutionTypeInterface,
-    Project,
+    ExecutionInterface,
 )
+from domino_maintenance_mode.projects import Project
 
 # From WorkspaceState.scala
 RUNNING_STATES = {"Started"}
@@ -25,7 +25,7 @@ class WorkspaceId:
     projectId: str
 
 
-class Interface(ExecutionTypeInterface[WorkspaceId]):
+class Interface(ExecutionInterface[WorkspaceId]):
     def id_from_value(self, v) -> WorkspaceId:
         return WorkspaceId(**v)
 

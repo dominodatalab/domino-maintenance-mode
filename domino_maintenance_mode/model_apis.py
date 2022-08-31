@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import List
 
-from domino_maintenance_mode.shutdown_manager import (
+from domino_maintenance_mode.execution_interface import (
     Execution,
-    ExecutionTypeInterface,
-    Project,
+    ExecutionInterface,
 )
+from domino_maintenance_mode.projects import Project
 
 # From ModelVersionStatus.scala
 RUNNING_STATES = {"Running"}
@@ -26,7 +26,7 @@ class ModelVersionId:
     isActive: bool
 
 
-class Interface(ExecutionTypeInterface[ModelVersionId]):
+class Interface(ExecutionInterface[ModelVersionId]):
     def id_from_value(self, v) -> ModelVersionId:
         return ModelVersionId(**v)
 
