@@ -47,4 +47,6 @@ dmm restore <snapshot file from above>
 
 # Domino Version Support
 
-Anything after classic Workspaces was no longer supported?
+**Domino 4.4+**, please report any issues that may arise due to API changes, as not all versions have been validated.
+
+Classic Workspaces are not currently supported and should be shutdown manually. 

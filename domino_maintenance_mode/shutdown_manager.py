@@ -48,17 +48,38 @@ def fetch_projects() -> List[Project]:
 
 
 class ExecutionTypeInterface(ABC, Generic[Id]):
+    session: Optional[requests.Session] = None
+
     def __init__(self):
-        api_key = os.environ["DOMINO_API_KEY"]
-        self.hostname = os.environ["DOMINO_HOSTNAME"]
-        # TODO: Ability to trust custom certs?
-        self.session = requests.Session()
-        self.session.headers.update(
-            {
-                "Content-Type": "application/json",
-                "X-Domino-Api-Key": api_key,
-            }
-        )
+        pass
+
+    def __get_session(self) -> requests.Session:
+        if self.session is None:
+            if "DOMINO_API_KEY" not in os.environ:
+                raise Exception(
+                    (
+                        "Please specify Domino API key using "
+                        "'DOMINO_API_KEY' environment variable."
+                    )
+                )
+            if "DOMINO_HOSTNAME" not in os.environ:
+                raise Exception(
+                    (
+                        "Please specify Domino deployment hostname"
+                        " using 'DOMINO_HOSTNAME' environment variable."
+                    )
+                )
+            api_key = os.environ["DOMINO_API_KEY"]
+            self.hostname = os.environ["DOMINO_HOSTNAME"]
+            # TODO: Ability to trust custom certs?
+            self.session = requests.Session()
+            self.session.headers.update(
+                {
+                    "Content-Type": "application/json",
+                    "X-Domino-Api-Key": api_key,
+                }
+            )
+        return self.session
 
     def id_from_value(self, v) -> Id:
         # Override for non-primitive Id types
@@ -68,7 +89,7 @@ class ExecutionTypeInterface(ABC, Generic[Id]):
         return Execution(self.id_from_value(d["_id"]), d["name"], d["owner"])
 
     def get(self, path: str, success_code: int = 200) -> dict:
-        response = self.session.get(f"{self.hostname}{path}")
+        response = self.__get_session().get(f"{self.hostname}{path}")
         if response.status_code != success_code:
             raise Exception(
                 f"API returned error ({response.status_code}): {response.text}"
@@ -78,7 +99,9 @@ class ExecutionTypeInterface(ABC, Generic[Id]):
     def post(
         self, path: str, json: Optional[dict] = None, success_code: int = 200
     ) -> dict:
-        response = self.session.post(f"{self.hostname}{path}", json=json)
+        response = self.__get_session().post(
+            f"{self.hostname}{path}", json=json
+        )
         if response.status_code != success_code:
             raise Exception(
                 f"API returned error ({response.status_code}): {response.text}"
@@ -88,7 +111,9 @@ class ExecutionTypeInterface(ABC, Generic[Id]):
     def put(
         self, path: str, json: Optional[dict] = None, success_code: int = 200
     ) -> dict:
-        response = self.session.put(f"{self.hostname}{path}", json=json)
+        response = self.__get_session().put(
+            f"{self.hostname}{path}", json=json
+        )
         if response.status_code != success_code:
             raise Exception(
                 f"API returned error ({response.status_code}): {response.text}"
@@ -170,12 +195,12 @@ class ShutdownManager:
             self.executions = running_executions
             self.failed: List[Execution] = []
             self.stopping: List[Execution] = []
-            self.__batch_stop()
-            self.__wait()
+            self.__batch_toggle(self.interface.stop)
+            self.__wait_condition(self.interface.is_stopped)
 
         logger.info(f"{self.typ}s successfully shut down.")
 
-    def __batch_stop(self):
+    def __batch_toggle(self, func):
         while len(self.executions) > 0:
             batch = [
                 self.executions.pop()
@@ -183,7 +208,7 @@ class ShutdownManager:
             ]
 
             for execution in batch:
-                self.__stop_execution(execution)
+                self.__toggle_execution(execution, func)
 
             if len(self.executions) > 0:
                 logger.info(
@@ -191,9 +216,9 @@ class ShutdownManager:
                 )
                 time.sleep(self.batch_interval_s)
 
-    def __stop_execution(self, execution: Execution):
+    def __toggle_execution(self, execution: Execution, func):
         try:
-            self.interface.stop(execution._id)
+            func(execution._id)
             logger.info(f"Stopped {self.typ} '{execution.name}'")
             self.stopping.append(execution)
         except Exception as e:
@@ -211,7 +236,7 @@ class ShutdownManager:
                 )
                 self.failed.append(execution)
 
-    def __wait(self):
+    def __wait_condition(self, func):
         logger.info(
             f"Waiting up to {self.grace_period_s}s for {self.typ}s to stop."
         )
@@ -221,7 +246,7 @@ class ShutdownManager:
                 raise TimeoutError()
             execution = self.stopping.pop()
             try:
-                stopped = self.interface.is_stopped(execution._id)
+                stopped = func(execution._id)
             except Exception as e:
                 logger.warn(f"Error polling {self.typ} state: {e}")
                 stopped = False

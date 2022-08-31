@@ -105,7 +105,7 @@ cli.add_command(snapshot)
 def shutdown(snapshot, **kwargs):
     """Stop running Apps, Model APIs, Durable Workspaces, and Scheduled Jobs.
 
-    SNAPSHOT_PATH : The path to snapshot output from 'dmm snapshot'.
+    SNAPSHOT : The path to snapshot output from 'dmm snapshot'.
     """
     state = __load_state(snapshot)
     shutdown_manager = ShutdownManager(**kwargs)
@@ -119,7 +119,10 @@ cli.add_command(shutdown)
 @click.command()
 @click.argument("snapshot", type=click.File("r"))
 def restore(snapshot):
-    """Restore previously running Apps, Model APIs, and Scheduled Jobs."""
+    """Restore previously running Apps, Model APIs, and Scheduled Jobs.
+
+    SNAPSHOT : The path to snapshot output from 'dmm snapshot'.
+    """
     # state = __load_state(snapshot)
     for interface in EXECUTION_INTERFACES.values():
         if interface.is_restartable():
