@@ -2,6 +2,7 @@
 Easily place Domino in maintenance mode for upgrades and restore afterwards.
 
 ![Test](https://github.com/dominodatalab/domino-maintenance-mode/actions/workflows/test.yaml/badge.svg)
+[![Docker Repository on Quay](https://quay.io/repository/domino/dmm/status "Docker Repository on Quay")](https://quay.io/repository/domino/dmm)
 
 # Usage
 
