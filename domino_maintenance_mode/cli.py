@@ -7,15 +7,19 @@ from typing import Any, Dict, List
 
 import click
 
-from domino_maintenance_mode.interfaces.apps import Interface as AppInterface
 from domino_maintenance_mode.execution_interface import ExecutionInterface
-from domino_maintenance_mode.manager import ShutdownManager
-from domino_maintenance_mode.interfaces.model_apis import Interface as ModelApiInterface
-from domino_maintenance_mode.projects import fetch_projects
+from domino_maintenance_mode.interfaces.apps import Interface as AppInterface
+from domino_maintenance_mode.interfaces.model_apis import (
+    Interface as ModelApiInterface,
+)
 from domino_maintenance_mode.interfaces.scheduled_jobs import (
     Interface as ScheduledJobInterface,
 )
-from domino_maintenance_mode.interfaces.workspaces import Interface as WorkspaceInterface
+from domino_maintenance_mode.interfaces.workspaces import (
+    Interface as WorkspaceInterface,
+)
+from domino_maintenance_mode.manager import ShutdownManager
+from domino_maintenance_mode.projects import fetch_projects
 
 __INTERFACES: List[ExecutionInterface[Any]] = [
     AppInterface(),
