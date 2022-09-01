@@ -18,7 +18,7 @@ from domino_maintenance_mode.interfaces.scheduled_jobs import (
 from domino_maintenance_mode.interfaces.workspaces import (
     Interface as WorkspaceInterface,
 )
-from domino_maintenance_mode.manager import ShutdownManager
+from domino_maintenance_mode.manager import Manager
 from domino_maintenance_mode.projects import fetch_projects
 
 __INTERFACES: List[ExecutionInterface[Any]] = [
@@ -108,9 +108,9 @@ def shutdown(snapshot, **kwargs):
     SNAPSHOT : The path to snapshot output from 'dmm snapshot'.
     """
     state = __load_state(snapshot)
-    shutdown_manager = ShutdownManager(**kwargs)
-    for execution_interface in EXECUTION_INTERFACES.values():
-        shutdown_manager.shutdown(execution_interface, state)
+    manager = Manager(**kwargs)
+    for interface in EXECUTION_INTERFACES.values():
+        manager.stop(interface, state[interface.singular()])
 
 
 cli.add_command(shutdown)
@@ -118,16 +118,50 @@ cli.add_command(shutdown)
 
 @click.command()
 @click.argument("snapshot", type=click.File("r"))
-def restore(snapshot):
+@click.option(
+    "-b",
+    "--batch-size",
+    type=click.IntRange(min=0),
+    default=5,
+    help=(
+        "Number of concurrent requests to make when "
+        "stopping executions or polling for status."
+    ),
+)
+@click.option(
+    "-i",
+    "--batch-interval_s",
+    type=click.IntRange(min=0),
+    default=30,
+    help="Interval to wait between batches of API calls.",
+)
+@click.option(
+    "-m",
+    "--max-failures",
+    type=click.IntRange(min=0),
+    default=5,
+    help=(
+        "Maximum number of failed API calls for a given "
+        "execution before it is reported for manual cleanup."
+    ),
+)
+@click.option(
+    "-g",
+    "--grace-period-s",
+    type=click.IntRange(min=0),
+    default=600,
+    help="Amount of time to wait for executions to complete.",
+)
+def restore(snapshot, **kwargs):
     """Restore previously running Apps, Model APIs, and Scheduled Jobs.
 
     SNAPSHOT : The path to snapshot output from 'dmm snapshot'.
     """
-    # state = __load_state(snapshot)
+    state = __load_state(snapshot)
+    manager = Manager(**kwargs)
     for interface in EXECUTION_INTERFACES.values():
         if interface.is_restartable():
-            # TODO
-            pass
+            manager.start(interface, state[interface.singular()])
 
 
 cli.add_command(restore)

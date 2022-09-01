@@ -1,6 +1,7 @@
 import logging
 import time
-from typing import List
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
 from domino_maintenance_mode.execution_interface import (
     Execution,
@@ -10,7 +11,13 @@ from domino_maintenance_mode.execution_interface import (
 logger = logging.getLogger(__name__)
 
 
-class ShutdownManager:
+@dataclass
+class BatchCallResult:
+    failed: List[Execution]
+    success: List[Execution]
+
+
+class Manager:
     batch_size: int
     batch_interval_s: int
     max_failures: int
@@ -29,82 +36,116 @@ class ShutdownManager:
         self.grace_period_s = grace_period_s
         self.max_failures = max_failures
 
-    def shutdown(self, interface: ExecutionInterface, state: dict):
-        self.interface = interface
-        self.typ = interface.singular()
+    def stop(self, interface: ExecutionInterface, executions: List[Execution]):
+        self.__toggle_executions(
+            "stop",
+            interface.singular(),
+            interface.stop,
+            interface.is_stopped,
+            executions,
+        )
 
-        logger.info(f"Shutting down {self.typ}s")
+    def start(
+        self, interface: ExecutionInterface, executions: List[Execution]
+    ):
+        self.__toggle_executions(
+            "start",
+            interface.singular(),
+            interface.start,
+            interface.is_running,
+            executions,
+        )
 
-        running_executions = state[interface.singular()]
-        logger.debug(running_executions)
-        logger.info(f"Found {len(running_executions)} running {self.typ}(s)")
-        if len(running_executions) > 0:
-            if input(
-                "Are you sure you want to shut down these executions? "
-            ).lower() not in {"y", "yes"}:
-                return
+    def __toggle_executions(
+        self,
+        verb: str,
+        singular: str,
+        toggle_func,
+        wait_func,
+        executions: List[Execution],
+    ):
+        if input(
+            f"Are you sure you want to {verb} these {singular}s? "
+        ).lower() not in {"y", "yes"}:
+            return
+        result = self.__batch_call(verb, singular, toggle_func, executions)
+        wait_failed = self.__wait_condition(
+            verb, singular, wait_func, result.success
+        )
+        # TODO Generate alert / persist output?
+        failed = result.failed + wait_failed
+        logger.warn(f"{len(failed)} {singular}s failed to {verb}!")
 
-            self.executions = running_executions
-            self.failed: List[Execution] = []
-            self.stopping: List[Execution] = []
-            self.__batch_toggle(self.interface.stop)
-            self.__wait_condition(self.interface.is_stopped)
-
-        logger.info(f"{self.typ}s successfully shut down.")
-
-    def __batch_toggle(self, func):
-        while len(self.executions) > 0:
+    def __batch_call(
+        self, verb: str, singular: str, func, executions: List[Execution]
+    ) -> BatchCallResult:
+        """Batches / rate limits API calls to change execution state."""
+        success: List[Execution] = []
+        failed: List[Execution] = []
+        failures: Dict[Any, int] = {}
+        while len(executions) > 0:
             batch = [
-                self.executions.pop()
-                for _ in range(min(len(self.executions), self.batch_size))
+                executions.pop()
+                for _ in range(min(len(executions), self.batch_size))
             ]
 
             for execution in batch:
-                self.__toggle_execution(execution, func)
+                try:
+                    func(execution._id)
+                    success.append(execution)
+                except Exception as e:
+                    failures[execution._id] = (
+                        failures.get(execution._id, 0) + 1
+                    )
+                    if failures[execution._id] < self.max_failures:
+                        logger.warn(
+                            (
+                                f"Failed to {verb} {singular} "
+                                f"'{execution.name}' (retrying): {e}"
+                            )
+                        )
+                        executions.insert(0, execution)
+                    else:
+                        logger.warn(
+                            (
+                                f"Failed to {verb} {singular} "
+                                f"'{execution.name}': {e}"
+                            )
+                        )
+                        failed.append(execution)
 
-            if len(self.executions) > 0:
-                logger.info(
-                    f"Batch complete, {len(self.executions)} remaining."
-                )
+            if len(executions) > 0:
+                logger.info(f"Batch complete, {len(executions)} remaining.")
                 time.sleep(self.batch_interval_s)
+        return BatchCallResult(failed, success)
 
-    def __toggle_execution(self, execution: Execution, func):
-        try:
-            func(execution._id)
-            logger.info(f"Stopped {self.typ} '{execution.name}'")
-            self.stopping.append(execution)
-        except Exception as e:
-            self.failures[execution._id] = (
-                self.failures.get(execution._id, 0) + 1
-            )
-            if self.failures[execution._id] < self.max_failures:
-                logger.warn(
-                    f"Error stopping {self.typ} '{execution.name}': {e}"
-                )
-                self.executions.insert(0, execution)
-            else:
-                logger.warn(
-                    f"Failed to stop {self.typ} '{execution.name}': {e}"
-                )
-                self.failed.append(execution)
+    def __wait_condition(
+        self, verb, singular, func, executions: List[Execution]
+    ) -> List[Execution]:
+        """Wait until `func` returns true for all executions in `self.waiting`
 
-    def __wait_condition(self, func):
+        Up to `self.grace_period_s`.
+        """
+        failed = [execution for execution in executions]
         logger.info(
-            f"Waiting up to {self.grace_period_s}s for {self.typ}s to stop."
+            f"Waiting up to {self.grace_period_s}s for {singular}s to {verb}."
         )
         tic = time.time()
-        while len(self.stopping) > 0:
+        while len(failed) > 0:
             if (time.time() - tic) >= self.grace_period_s:
-                raise TimeoutError()
-            execution = self.stopping.pop()
+                return failed
+            execution = failed.pop()
             try:
-                stopped = func(execution._id)
+                ready = func(execution._id)
             except Exception as e:
-                logger.warn(f"Error polling {self.typ} state: {e}")
-                stopped = False
+                logger.warn(f"Error polling {singular} state: {e}")
+                ready = False
 
-            if stopped:
-                logger.info(f"{self.typ} '{execution.name}' has stopped.")
+            if ready:
+                logger.info(
+                    f"Successful {verb} of {singular} '{execution.name}'."
+                )
             else:
-                self.stopping.insert(0, execution)
+                failed.insert(0, execution)
             time.sleep(1)
+        return failed
