@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from pprint import pformat
 from typing import List
 
 from domino_maintenance_mode.execution_interface import (
@@ -86,9 +85,6 @@ class Interface(ExecutionInterface[WorkspaceId]):
         workspace = self.get(
             f"{BASE_PATH}/project/{_id.projectId}/workspace/{_id._id}"
         )
-        from pprint import pformat
-
-        logger.info(pformat(workspace))
         return workspace["mostRecentSession"]["sessionStatusInfo"][
             "isCompleted"
         ]
@@ -97,7 +93,6 @@ class Interface(ExecutionInterface[WorkspaceId]):
         workspace = self.get(
             f"{BASE_PATH}/project/{_id.projectId}/workspace/{_id._id}"
         )
-        logger.info(pformat(workspace))
         return workspace["mostRecentSession"]["sessionStatusInfo"]["isRunning"]
 
     def is_restartable(self) -> bool:
