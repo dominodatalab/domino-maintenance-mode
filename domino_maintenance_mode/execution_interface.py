@@ -5,7 +5,11 @@ from typing import Generic, List, Optional, TypeVar
 import requests
 
 from domino_maintenance_mode.projects import Project
-from domino_maintenance_mode.util import get_api_key, get_hostname
+from domino_maintenance_mode.util import (
+    get_api_key,
+    get_hostname,
+    should_verify,
+)
 
 Id = TypeVar("Id")
 
@@ -35,6 +39,7 @@ class ExecutionInterface(ABC, Generic[Id]):
                     "X-Domino-Api-Key": api_key,
                 }
             )
+            self.session.verify = should_verify()
         return self.session
 
     def id_from_value(self, v) -> Id:

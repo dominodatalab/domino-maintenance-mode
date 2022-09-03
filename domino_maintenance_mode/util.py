@@ -21,3 +21,7 @@ def get_hostname() -> str:
             )
         )
     return os.environ["DOMINO_HOSTNAME"]
+
+
+def should_verify() -> bool:
+    return os.environ.get("DOMINO_SSL_NO_VERIFY") != "true"

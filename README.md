@@ -12,6 +12,14 @@ Easily place Domino in maintenance mode for upgrades and restore afterwards.
 
 * If either stopping or starting fails because the API returned an error, or the operation timed out while waiting for the execution to enter at running state, the tool will emit a warning and save a record of the executions which failed to a log file. This is in JSON format and can be used to follow up manually.
 
+# Configuration
+
+You must set some environment variables to configure access to the Domino deployment.
+
+* `DOMINO_API_KEY` - An administrator's Domino API key.
+* `DOMINO_HOSTNAME` - The URL to your Domino deployment, including protocol (and port if non-standard).
+* `DOMINO_SSL_NO_VERIFY` - **Optional** Set to "true" to disabled server certificate verification.
+
 # Usage
 
 * Take a snapshot of running executions:
