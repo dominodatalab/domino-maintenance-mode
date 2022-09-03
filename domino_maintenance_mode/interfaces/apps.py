@@ -37,7 +37,6 @@ class Interface(ExecutionInterface[AppId]):
 
     def list_running(self, projects: List[Project]) -> List[Execution[AppId]]:
         data = self.get("/v4/modelProducts")
-        logger.info(pformat(data))
         executions = []
         for app in data:
             logger.debug(pformat(app))
