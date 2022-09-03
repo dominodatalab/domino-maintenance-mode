@@ -1,7 +1,9 @@
+import datetime
+import json
 import logging
 import time
-from dataclasses import dataclass
-from typing import Any, Dict, List
+from dataclasses import asdict, dataclass, is_dataclass
+from typing import Any, Dict, List, Optional
 
 from domino_maintenance_mode.execution_interface import (
     Execution,
@@ -27,7 +29,7 @@ class Manager:
     def __init__(
         self,
         batch_size: int = 5,
-        batch_interval_s: int = 30,
+        batch_interval_s: int = 5,
         max_failures: int = 5,
         grace_period_s: int = 600,
     ):
@@ -56,6 +58,41 @@ class Manager:
             executions,
         )
 
+    def __persist_failed(
+        self,
+        verb: str,
+        singular: str,
+        session: str,
+        action: List[Execution],
+        wait: Optional[List[Execution]] = None,
+    ):
+        path = f"{session}-failed.json"
+        if (wait is None and len(action) > 0) or (
+            wait is not None and len(wait) > 0
+        ):
+            if wait is None:
+                logger.warn(
+                    (
+                        f"{len(action)} {singular}s failed to {verb}!"
+                        f" Saving log to '{path}'."
+                    )
+                )
+            else:
+                logger.warn(
+                    (
+                        f"{len(wait)} {singular}s timed out!"
+                        " Updating log at '{path}'."
+                    )
+                )
+            data = {
+                "modify": list(map(asdict, action)),
+                "timeout": list(map(asdict, wait))
+                if wait is not None
+                else None,
+            }
+            with open(path, "w") as f:
+                json.dump(data, f)
+
     def __toggle_executions(
         self,
         verb: str,
@@ -71,13 +108,15 @@ class Manager:
             )
         ).lower() not in {"y", "yes"}:
             return
+        session = f"{singular}-{verb}-{datetime.datetime.now().isoformat()}"
         result = self.__batch_call(verb, singular, toggle_func, executions)
+        self.__persist_failed(verb, singular, session, result.failed)
         wait_failed = self.__wait_condition(
             verb, singular, wait_func, result.success
         )
-        # TODO Generate alert / persist output?
-        failed = result.failed + wait_failed
-        logger.warn(f"{len(failed)} {singular}s failed to {verb}!")
+        self.__persist_failed(
+            verb, singular, session, result.failed, wait_failed
+        )
 
     def __batch_call(
         self, verb: str, singular: str, func, executions: List[Execution]
@@ -103,10 +142,12 @@ class Manager:
                         )
                     )
                 except Exception as e:
-                    failures[execution._id] = (
-                        failures.get(execution._id, 0) + 1
-                    )
-                    if failures[execution._id] < self.max_failures:
+                    if is_dataclass(execution._id):
+                        key = execution._id._id
+                    else:
+                        key = execution._id
+                    failures[key] = failures.get(key, 0) + 1
+                    if failures[key] < self.max_failures:
                         logger.warn(
                             (
                                 f"Failed to {verb} {singular} "

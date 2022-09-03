@@ -82,7 +82,7 @@ cli.add_command(snapshot)
     "-i",
     "--batch-interval_s",
     type=click.IntRange(min=0),
-    default=30,
+    default=5,
     help="Interval to wait between batches of API calls.",
 )
 @click.option(
@@ -134,7 +134,7 @@ cli.add_command(shutdown)
     "-i",
     "--batch-interval_s",
     type=click.IntRange(min=0),
-    default=30,
+    default=5,
     help="Interval to wait between batches of API calls.",
 )
 @click.option(

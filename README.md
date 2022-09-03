@@ -10,9 +10,11 @@ Easily place Domino in maintenance mode for upgrades and restore afterwards.
 
 * It is possible for a running, functioning App to have a PVC mounted from an unregistered EDV that it depends on. Since the EDV no longer exists, the App cannot be restarted with this PVC mounted and can fail. It is not possible to detect this scenario automatically via the API. Please do not unregister EDVs while in maintenance mode.
 
+* If either stopping or starting fails because the API returned an error, or the operation timed out while waiting for the execution to enter at running state, the tool will emit a warning and save a record of the executions which failed to a log file. This is in JSON format and can be used to follow up manually.
+
 # Usage
 
-1. Take a snapshot of running executions:
+* Take a snapshot of running executions:
 
 ```
 dmm snapshot my-snapshot-file.json
@@ -20,13 +22,13 @@ dmm snapshot my-snapshot-file.json
 
 This will create a timestamped snapshot file which you will need to use in subsequent steps.
 
-1. Stop all running Apps, Model APIs, Restartable Workspaces, and Scheduled Jobs:
+* Stop all running Apps, Model APIs, Restartable Workspaces, and Scheduled Jobs:
 
 ```
 dmm shutdown my-snapshot-file.json
 ```
 
-<!-- 3. [OPTIONAL] You may wait for Jobs and Image Builds to complete themselves. If you would like to manually shut them down:
+<!-- * [OPTIONAL] You may wait for Jobs and Image Builds to complete themselves. If you would like to manually shut them down:
 
 **Depending on the fault-tolerance of the user code, data may be lost with this operation.**
 
@@ -42,9 +44,9 @@ dmm stop-builds
 
 This will stop Image Builds. These can be manually retried after the system is upgraded from the Environments UI.  -->
 
-1. Perform Domino maintenance / upgrade.
+* Perform Domino maintenance / upgrade.
 
-1. Restore previously running Apps, Model APIs and Scheduled Jobs. Workspaces should be manually restarted by users. 
+* Restore previously running Apps, Model APIs and Scheduled Jobs. Workspaces should be manually restarted by users. 
 
 ```
 dmm restore my-snapshot-file.json
