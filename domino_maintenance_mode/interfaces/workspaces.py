@@ -1,4 +1,6 @@
+import logging
 from dataclasses import dataclass
+from pprint import pformat
 from typing import List
 
 from domino_maintenance_mode.execution_interface import (
@@ -8,8 +10,6 @@ from domino_maintenance_mode.execution_interface import (
 from domino_maintenance_mode.projects import Project
 
 # From WorkspaceState.scala
-RUNNING_STATES = {"Started"}
-STOPPED_STATES = {"Stopped", "Deleted"}
 RUNNING_OR_LAUNCHING_STATES = {
     "Created",
     "Initializing",
@@ -17,6 +17,8 @@ RUNNING_OR_LAUNCHING_STATES = {
     "Started",
 }
 BASE_PATH: str = "/v4/workspace"
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -84,13 +86,19 @@ class Interface(ExecutionInterface[WorkspaceId]):
         workspace = self.get(
             f"{BASE_PATH}/project/{_id.projectId}/workspace/{_id._id}"
         )
-        return workspace["state"] in STOPPED_STATES
+        from pprint import pformat
+
+        logger.info(pformat(workspace))
+        return workspace["mostRecentSession"]["sessionStatusInfo"][
+            "isCompleted"
+        ]
 
     def is_running(self, _id: WorkspaceId) -> bool:
         workspace = self.get(
             f"{BASE_PATH}/project/{_id.projectId}/workspace/{_id._id}"
         )
-        return workspace["state"] in RUNNING_STATES
+        logger.info(pformat(workspace))
+        return workspace["mostRecentSession"]["sessionStatusInfo"]["isRunning"]
 
     def is_restartable(self) -> bool:
         return False

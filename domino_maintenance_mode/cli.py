@@ -110,7 +110,9 @@ def shutdown(snapshot, **kwargs):
     state = __load_state(snapshot)
     manager = Manager(**kwargs)
     for interface in EXECUTION_INTERFACES.values():
-        manager.stop(interface, state[interface.singular()])
+        executions = state[interface.singular()]
+        if len(executions) > 0:
+            manager.stop(interface, executions)
 
 
 cli.add_command(shutdown)
@@ -161,31 +163,33 @@ def restore(snapshot, **kwargs):
     manager = Manager(**kwargs)
     for interface in EXECUTION_INTERFACES.values():
         if interface.is_restartable():
-            manager.start(interface, state[interface.singular()])
+            executions = state[interface.singular()]
+            if len(executions) > 0:
+                manager.start(interface, executions)
 
 
 cli.add_command(restore)
 
 
-@click.command()
-@click.option(
-    "--discard", default=False, help="Discard Job results when stopping."
-)
-def stop_jobs(discard: bool):
-    """Stop running Jobs."""
-    print("Shutdown Jobs")
+# @click.command()
+# @click.option(
+#     "--discard", default=False, help="Discard Job results when stopping."
+# )
+# def stop_jobs(discard: bool):
+#     """Stop running Jobs."""
+#     raise NotImplementedError("Stopping Jobs is not implemented.")
 
 
-cli.add_command(stop_jobs)
+# cli.add_command(stop_jobs)
 
 
-@click.command()
-def stop_builds():
-    """Stop running Image Builds."""
-    print("Shutdown Builds")
+# @click.command()
+# def stop_builds():
+#     """Stop running Image Builds."""
+#     raise NotImplementedError("Stopping Image Builds is not implemented.")
 
 
-cli.add_command(stop_builds)
+# cli.add_command(stop_builds)
 
 
 def main():

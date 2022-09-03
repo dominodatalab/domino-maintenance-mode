@@ -65,7 +65,10 @@ class Manager:
         executions: List[Execution],
     ):
         if input(
-            f"Are you sure you want to {verb} these {singular}s? "
+            (
+                f"Are you sure you want to {verb} these"
+                f" {len(executions)} {singular}s? "
+            )
         ).lower() not in {"y", "yes"}:
             return
         result = self.__batch_call(verb, singular, toggle_func, executions)
@@ -93,6 +96,12 @@ class Manager:
                 try:
                     func(execution._id)
                     success.append(execution)
+                    logger.info(
+                        (
+                            f"Successful {verb} of {singular}"
+                            f" '{execution.name}'"
+                        )
+                    )
                 except Exception as e:
                     failures[execution._id] = (
                         failures.get(execution._id, 0) + 1

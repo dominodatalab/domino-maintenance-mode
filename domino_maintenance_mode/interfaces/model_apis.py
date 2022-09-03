@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import List
 
@@ -17,6 +18,8 @@ RUNNING_OR_LAUNCHING_STATES = {
     "Running",
     "Stalled",
 }
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -64,7 +67,8 @@ class Interface(ExecutionInterface[ModelVersionId]):
                                 ModelVersionId(
                                     version["id"],
                                     model["id"],
-                                    version == model["activeModelVersionId"],
+                                    version["id"]
+                                    == model["activeModelVersionId"],
                                 ),
                                 f"{model['name']} Version {version['number']}",
                                 version["creator"]["name"],
