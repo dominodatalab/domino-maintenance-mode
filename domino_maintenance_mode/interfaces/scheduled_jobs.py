@@ -1,11 +1,16 @@
+import logging
 from dataclasses import dataclass
 from typing import List
+
+from tqdm import tqdm  # type: ignore
 
 from domino_maintenance_mode.execution_interface import (
     Execution,
     ExecutionInterface,
 )
 from domino_maintenance_mode.projects import Project
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -24,17 +29,32 @@ class Interface(ExecutionInterface[ScheduledJobId]):
     def list_running(
         self, projects: List[Project]
     ) -> List[Execution[ScheduledJobId]]:
+        logger.info("Scanning Scheduled Jobs by Project")
         running_executions = []
-        for project in projects:
-            jobs = self.get(f"/v4/projects/{project._id}/scheduledjobs")
-            for job in jobs:
-                if not job["isPaused"]:
-                    running_executions.append(
-                        Execution(
-                            ScheduledJobId(job["id"], job["projectId"]),
-                            job["title"],
-                            job["scheduledByUserName"],
+        for project in tqdm(projects, desc="Projects"):
+            try:
+                jobs = self.get(f"/v4/projects/{project._id}/scheduledjobs")
+            except Exception as e:
+                logger.error(
+                    (
+                        f"Exception while querying Scheduled Jobs "
+                        f"for Project '{project._id}': {e}"
+                    )
+                )
+                continue
+            for job in tqdm(jobs, desc="Scheduled Jobs"):
+                try:
+                    if not job["isPaused"]:
+                        running_executions.append(
+                            Execution(
+                                ScheduledJobId(job["id"], job["projectId"]),
+                                job["title"],
+                                job["scheduledByUserName"],
+                            )
                         )
+                except Exception as e:
+                    logger.error(
+                        f"Error parsing Scheduled Job: {job.get('id')}: {e}"
                     )
         return running_executions
 

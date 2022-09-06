@@ -2,6 +2,8 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
+from tqdm import tqdm  # type: ignore
+
 from domino_maintenance_mode.execution_interface import (
     Execution,
     ExecutionInterface,
@@ -36,6 +38,7 @@ class Interface(ExecutionInterface[WorkspaceId]):
     def list_running(
         self, projects: List[Project]
     ) -> List[Execution[WorkspaceId]]:
+        logger.info("Scanning Workspaces")
         project_lookup = {
             (project.owner, project.name): project._id for project in projects
         }
@@ -43,32 +46,51 @@ class Interface(ExecutionInterface[WorkspaceId]):
         offset = 1000
         limit = 50
         workspaces = {}
-        while True:
-            params = f"limit={limit}&offset={offset}"
-            data = self.get(f"{BASE_PATH}/adminDashboardRowData?{params}")
-            for entry in data.get("tableRows", []):
-                project_id = project_lookup[
-                    (entry["projectOwnerName"], entry["projectName"])
-                ]
-                entry["projectId"] = project_id
-                workspaces[entry["workspaceId"]] = entry
-            if len(workspaces) >= data["totalEntries"]:
-                break
-            offset += 1
-            # If the list of workspaces has changed, loop again
-            if offset * limit >= data["totalEntries"]:
-                offset = 0
+        try:
+            while True:
+                params = f"limit={limit}&offset={offset}"
+                data = self.get(f"{BASE_PATH}/adminDashboardRowData?{params}")
+                for entry in data.get("tableRows", []):
+                    project_id = project_lookup[
+                        (entry["projectOwnerName"], entry["projectName"])
+                    ]
+                    entry["projectId"] = project_id
+                    workspaces[entry["workspaceId"]] = entry
+                if len(workspaces) >= data["totalEntries"]:
+                    break
+                offset += 1
+                # If the list of workspaces has changed, loop again
+                if offset * limit >= data["totalEntries"]:
+                    offset = 0
+        except Exception as e:
+            logger.error(
+                (
+                    f"Error querying Workspaces: {e}, snapshot may "
+                    "not include all Workspaces."
+                )
+            )
 
         running_executions = []
-        for workspace in workspaces.values():
-            if workspace["workspaceState"] in RUNNING_OR_LAUNCHING_STATES:
-                running_executions.append(
-                    Execution(
-                        WorkspaceId(
-                            workspace["workspaceId"], workspace["projectId"]
-                        ),
-                        f"{workspace['projectName']}/{workspace['name']}",
-                        f"{workspace['ownerUsername']}",
+        for workspace in tqdm(
+            workspaces.values(), desc="Workspaces", total=len(workspaces)
+        ):
+            try:
+                if workspace["workspaceState"] in RUNNING_OR_LAUNCHING_STATES:
+                    running_executions.append(
+                        Execution(
+                            WorkspaceId(
+                                workspace["workspaceId"],
+                                workspace["projectId"],
+                            ),
+                            f"{workspace['projectName']}/{workspace['name']}",
+                            f"{workspace['ownerUsername']}",
+                        )
+                    )
+            except Exception as e:
+                logger.error(
+                    (
+                        f"Error parsing Workspace "
+                        f"{workspace.get('workspaceId')}: {e}"
                     )
                 )
         return running_executions

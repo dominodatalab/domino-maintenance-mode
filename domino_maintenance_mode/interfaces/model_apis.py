@@ -2,6 +2,8 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
+from tqdm import tqdm  # type: ignore
+
 from domino_maintenance_mode.execution_interface import (
     Execution,
     ExecutionInterface,
@@ -39,41 +41,62 @@ class Interface(ExecutionInterface[ModelVersionId]):
     def list_running(
         self, projects: List[Project]
     ) -> List[Execution[ModelVersionId]]:
+        logger.info("Scanning Model API Versions by Project")
         running_executions = []
-        for project in projects:
-            models = self.get(
-                f"/v4/modelManager/getModels?projectId={project._id}"
-            )
-            for model in models:
-                versions = []
-                page = 1
-                query = f"pageNumber={page}&pageSize=10"
-                data = self.get(f"/models/{model['id']}/versions/json?{query}")
-                while len(data["results"]) > 0:
-                    versions.extend(data["results"])
-                    page += 1
+        for project in tqdm(projects, desc="Projects"):
+            try:
+                models = self.get(
+                    f"/v4/modelManager/getModels?projectId={project._id}"
+                )
+            except Exception as e:
+                logger.error(
+                    (
+                        f"Exception while querying models for "
+                        f"project '{project._id}': {e}"
+                    )
+                )
+                continue
+            for model in tqdm(models, desc="Models"):
+                try:
+                    versions = []
+                    page = 1
                     query = f"pageNumber={page}&pageSize=10"
                     data = self.get(
                         f"/models/{model['id']}/versions/json?{query}"
                     )
-                for version in versions:
-                    if (
-                        version["deploymentStatus"]["name"]
-                        in RUNNING_OR_LAUNCHING_STATES
-                        or version["deploymentStatus"]["isPending"]
-                    ):
-                        running_executions.append(
-                            Execution(
-                                ModelVersionId(
-                                    version["id"],
-                                    model["id"],
-                                    version["id"]
-                                    == model["activeModelVersionId"],
-                                ),
-                                f"{model['name']} Version {version['number']}",
-                                version["creator"]["name"],
-                            )
+                    while len(data["results"]) > 0:
+                        versions.extend(data["results"])
+                        page += 1
+                        query = f"pageNumber={page}&pageSize=10"
+                        data = self.get(
+                            f"/models/{model['id']}/versions/json?{query}"
                         )
+                    for version in versions:
+                        if (
+                            version["deploymentStatus"]["name"]
+                            in RUNNING_OR_LAUNCHING_STATES
+                            or version["deploymentStatus"]["isPending"]
+                        ):
+                            running_executions.append(
+                                Execution(
+                                    ModelVersionId(
+                                        version["id"],
+                                        model["id"],
+                                        version["id"]
+                                        == model["activeModelVersionId"],
+                                    ),
+                                    f"{model['name']} #{version['number']}",
+                                    version["creator"]["name"],
+                                )
+                            )
+                except Exception as e:
+                    logger.error(
+                        (
+                            f"Exception while detecting state of "
+                            f"Model API {model.get('id')}: {e}"
+                        )
+                    )
+
         return running_executions
 
     def stop(self, _id: ModelVersionId):

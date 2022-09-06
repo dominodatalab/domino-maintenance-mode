@@ -12,6 +12,8 @@ Easily place Domino in maintenance mode for upgrades and restore afterwards.
 
 * If either stopping or starting fails because the API returned an error, or the operation timed out while waiting for the execution to enter at running state, the tool will emit a warning and save a record of the executions which failed to a log file. This is in JSON format and can be used to follow up manually.
 
+* Any `error` log levels or above require manual inspection to determine the state of an execution or executions.
+
 # Configuration
 
 You must set some environment variables to configure access to the Domino deployment.

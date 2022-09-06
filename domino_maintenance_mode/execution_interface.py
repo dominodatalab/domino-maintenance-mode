@@ -21,6 +21,12 @@ class Execution(Generic[Id]):
     owner: str
 
 
+@dataclass
+class FailedExecution(Generic[Id]):
+    execution: Execution[Id]
+    message: str
+
+
 class ExecutionInterface(ABC, Generic[Id]):
     session: Optional[requests.Session] = None
 

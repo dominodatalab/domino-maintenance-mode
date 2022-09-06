@@ -71,14 +71,14 @@ class Manager:
             wait is not None and len(wait) > 0
         ):
             if wait is None:
-                logger.warn(
+                logger.error(
                     (
                         f"{len(action)} {singular}s failed to {verb}!"
                         f" Saving log to '{path}'."
                     )
                 )
             else:
-                logger.warn(
+                logger.error(
                     (
                         f"{len(wait)} {singular}s timed out!"
                         " Updating log at '{path}'."

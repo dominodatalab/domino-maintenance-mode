@@ -3,6 +3,8 @@ from dataclasses import asdict, dataclass
 from pprint import pformat
 from typing import List
 
+from tqdm import tqdm  # type: ignore
+
 from domino_maintenance_mode.execution_interface import (
     Execution,
     ExecutionInterface,
@@ -36,9 +38,10 @@ class Interface(ExecutionInterface[AppId]):
         return "App"
 
     def list_running(self, projects: List[Project]) -> List[Execution[AppId]]:
+        logger.info("Scanning Apps")
         data = self.get("/v4/modelProducts")
         executions = []
-        for app in data:
+        for app in tqdm(data, desc="Apps"):
             logger.debug(pformat(app))
             try:
                 if app["status"] in STOPPED_STATES:
@@ -53,7 +56,7 @@ class Interface(ExecutionInterface[AppId]):
                     )
                 )
             except Exception as e:
-                logger.warn(f"Error parsing App: '{pformat(app)}': {e}")
+                logger.error(f"Error parsing App: {app.get('id')}: {e}")
         return executions
 
     def stop(self, _id: AppId):
