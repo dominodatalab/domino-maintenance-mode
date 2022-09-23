@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import List
+from typing import Any, Dict, List
 
 from tqdm import tqdm  # type: ignore
 
@@ -43,25 +43,40 @@ class Interface(ExecutionInterface[WorkspaceId]):
             (project.owner, project.name): project._id for project in projects
         }
 
-        offset = 1000
+        offset = 0
         limit = 50
-        workspaces = {}
+        workspaces: Dict[str, Any] = {}
         try:
             while True:
                 params = f"limit={limit}&offset={offset}"
                 data = self.get(f"{BASE_PATH}/adminDashboardRowData?{params}")
+                last_count = len(workspaces)
                 for entry in data.get("tableRows", []):
                     project_id = project_lookup[
                         (entry["projectOwnerName"], entry["projectName"])
                     ]
                     entry["projectId"] = project_id
                     workspaces[entry["workspaceId"]] = entry
+                logger.debug(
+                    (
+                        f"Got {len(data.get('tableRows', []))}"
+                        f" entries, {len(workspaces) - last_count} new,"
+                        f" offset: {offset},"
+                        f" limit: {limit}"
+                    )
+                )
                 if len(workspaces) >= data["totalEntries"]:
                     break
                 offset += 1
                 # If the list of workspaces has changed, loop again
                 if offset * limit >= data["totalEntries"]:
-                    offset = 0
+                    raise Exception(
+                        (
+                            "Number of Workspaces found did not match"
+                            " 'totalEntries':"
+                            f" {len(workspaces)}/{data['totalEntries']}"
+                        )
+                    )
         except Exception as e:
             logger.error(
                 (
