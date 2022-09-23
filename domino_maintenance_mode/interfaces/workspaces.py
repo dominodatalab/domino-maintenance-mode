@@ -43,25 +43,27 @@ class Interface(ExecutionInterface[WorkspaceId]):
             (project.owner, project.name): project._id for project in projects
         }
 
-        offset = 1000
+        offset = 0
         limit = 50
         workspaces = {}
         try:
             while True:
                 params = f"limit={limit}&offset={offset}"
                 data = self.get(f"{BASE_PATH}/adminDashboardRowData?{params}")
+                last_count = len(workspaces)
                 for entry in data.get("tableRows", []):
                     project_id = project_lookup[
                         (entry["projectOwnerName"], entry["projectName"])
                     ]
                     entry["projectId"] = project_id
                     workspaces[entry["workspaceId"]] = entry
+                logger.debug(f"Got {len(data.get('tableRows', []))} entries, {len(workspaces) - last_count} new, offset: {offset}, limit: {limit}")
                 if len(workspaces) >= data["totalEntries"]:
                     break
                 offset += 1
                 # If the list of workspaces has changed, loop again
                 if offset * limit >= data["totalEntries"]:
-                    offset = 0
+                    raise Exception(f"Number of Workspaces found did not match 'totalEntries': {len(workspaces)}/{data['totalEntries']}")
         except Exception as e:
             logger.error(
                 (
