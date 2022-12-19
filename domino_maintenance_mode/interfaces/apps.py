@@ -13,7 +13,7 @@ from domino_maintenance_mode.projects import Project
 
 logger = logging.getLogger(__name__)
 
-STOPPED_STATES = {"Stopped"}
+STOPPED_STATES = {"Stopped", "Error"}
 RUNNING_STATES = {"Running"}
 
 
