@@ -43,9 +43,7 @@ class Interface(ExecutionInterface[WorkspaceId]):
     def list_running(
         self, projects: List[Project]
     ) -> List[Execution[WorkspaceId]]:
-        logger.info(
-            f"Scanning Workspaces: {project_lookup}. Page size: {self.page_size}"
-        )
+        logger.info(f"Scanning Workspaces. Page size: {self.page_size}")
 
         project_lookup = {
             (project.owner, project.name): project._id for project in projects
