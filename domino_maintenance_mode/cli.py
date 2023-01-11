@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from dataclasses import asdict
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import click
 
