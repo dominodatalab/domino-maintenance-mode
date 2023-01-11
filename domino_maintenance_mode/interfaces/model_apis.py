@@ -47,7 +47,7 @@ class Interface(ExecutionInterface[ModelVersionId]):
         self, projects: List[Project]
     ) -> List[Execution[ModelVersionId]]:
         logger.info(
-            f"Scanning Model API Versions by Project. Page size: {self.page_size}"
+            f"Scanning Model API Versions. Page size: {self.page_size}"
         )
         running_executions = []
         for project in tqdm(projects, desc="Projects"):
