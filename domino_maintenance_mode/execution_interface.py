@@ -30,7 +30,7 @@ class FailedExecution(Generic[Id]):
 class ExecutionInterface(ABC, Generic[Id]):
     session: Optional[requests.Session] = None
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         pass
 
     def __get_session(self) -> requests.Session:

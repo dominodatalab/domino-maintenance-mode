@@ -32,6 +32,15 @@ class ModelVersionId:
 
 
 class Interface(ExecutionInterface[ModelVersionId]):
+    page_size: int
+
+    def __init__(
+        self,
+        models_page_size,
+        **kwargs
+    ):
+        self.page_size = models_page_size
+
     def id_from_value(self, v) -> ModelVersionId:
         return ModelVersionId(**v)
 
@@ -41,7 +50,7 @@ class Interface(ExecutionInterface[ModelVersionId]):
     def list_running(
         self, projects: List[Project]
     ) -> List[Execution[ModelVersionId]]:
-        logger.info("Scanning Model API Versions by Project")
+        logger.info(F"Scanning Model API Versions by Project. Page size: {self.page_size}")
         running_executions = []
         for project in tqdm(projects, desc="Projects"):
             try:
@@ -60,14 +69,14 @@ class Interface(ExecutionInterface[ModelVersionId]):
                 try:
                     versions = []
                     page = 1
-                    query = f"pageNumber={page}&pageSize=10"
+                    query = f"pageNumber={page}&pageSize={self.page_size}"
                     data = self.get(
                         f"/models/{model['id']}/versions/json?{query}"
                     )
                     while len(data["results"]) > 0:
                         versions.extend(data["results"])
                         page += 1
-                        query = f"pageNumber={page}&pageSize=10"
+                        query = f"pageNumber={page}&pageSize={self.page_size}"
                         data = self.get(
                             f"/models/{model['id']}/versions/json?{query}"
                         )
