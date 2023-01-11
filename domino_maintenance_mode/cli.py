@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from dataclasses import asdict
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import click
 
@@ -21,22 +21,26 @@ from domino_maintenance_mode.interfaces.workspaces import (
 from domino_maintenance_mode.manager import Manager
 from domino_maintenance_mode.projects import fetch_projects
 
-__INTERFACES: List[ExecutionInterface[Any]] = [
-    AppInterface(),
-    ModelApiInterface(),
-    WorkspaceInterface(),
-    ScheduledJobInterface(),
-]
 
-EXECUTION_INTERFACES: Dict[str, ExecutionInterface[Any]] = {
-    interface.singular(): interface for interface in __INTERFACES
-}
+def __get_execution_interfaces(**kwargs) -> Dict[str, ExecutionInterface[Any]]:
+    return {
+        interface.singular(): interface
+        for interface in [
+            interface(**kwargs)
+            for interface in [
+                AppInterface,
+                ModelApiInterface,
+                WorkspaceInterface,
+                ScheduledJobInterface,
+            ]
+        ]
+    }
 
 
 def __load_state(f) -> Dict[str, Any]:
     state = {}
     for k, v in json.load(f).items():
-        interface = EXECUTION_INTERFACES[k]
+        interface = __get_execution_interfaces()[k]
         state[k] = list(map(interface.execution_from_dict, v))
     return state
 
@@ -48,7 +52,19 @@ def cli():
 
 @click.command()
 @click.argument("output", type=click.File("x"))
-def snapshot(output):
+@click.option(
+    "--workspaces-page-size",
+    default=50,
+    type=click.IntRange(min=0),
+    help=("Number of workspaces to fetch from the API per request."),
+)
+@click.option(
+    "--models-page-size",
+    type=click.IntRange(min=0),
+    default=10,
+    help=("Number of models to fetch from the API per request."),
+)
+def snapshot(output, **kwargs):
     """Take a snapshot of running executions.
 
     OUTPUT: Path to write snapshot file to. Must not exist.
@@ -58,7 +74,7 @@ def snapshot(output):
         interface.singular(): list(
             map(asdict, interface.list_running(projects))
         )
-        for interface in EXECUTION_INTERFACES.values()
+        for interface in __get_execution_interfaces(**kwargs).values()
     }
     json.dump(state, output)
 
@@ -109,7 +125,7 @@ def shutdown(snapshot, **kwargs):
     """
     state = __load_state(snapshot)
     manager = Manager(**kwargs)
-    for interface in EXECUTION_INTERFACES.values():
+    for interface in __get_execution_interfaces().values():
         executions = state[interface.singular()]
         if len(executions) > 0:
             manager.stop(interface, executions)
@@ -161,7 +177,7 @@ def restore(snapshot, **kwargs):
     """
     state = __load_state(snapshot)
     manager = Manager(**kwargs)
-    for interface in EXECUTION_INTERFACES.values():
+    for interface in __get_execution_interfaces().values():
         if interface.is_restartable():
             executions = state[interface.singular()]
             if len(executions) > 0:
