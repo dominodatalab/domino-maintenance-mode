@@ -31,11 +31,7 @@ class WorkspaceId:
 class Interface(ExecutionInterface[WorkspaceId]):
     page_size: int
 
-    def __init__(
-        self,
-        workspaces_page_size,
-        **kwargs
-    ):
+    def __init__(self, workspaces_page_size, **kwargs):
         self.page_size = workspaces_page_size
 
     def id_from_value(self, v) -> WorkspaceId:
@@ -47,7 +43,9 @@ class Interface(ExecutionInterface[WorkspaceId]):
     def list_running(
         self, projects: List[Project]
     ) -> List[Execution[WorkspaceId]]:
-        logger.info(f"Scanning Workspaces: {project_lookup}. Page size: {self.page_size}")
+        logger.info(
+            f"Scanning Workspaces: {project_lookup}. Page size: {self.page_size}"
+        )
 
         project_lookup = {
             (project.owner, project.name): project._id for project in projects

@@ -30,7 +30,7 @@ class AppId:
     projectId: str
 
 
-class Interface(ExecutionInterface[AppId]):    
+class Interface(ExecutionInterface[AppId]):
     def id_from_value(self, v) -> AppId:
         return AppId(**v)
 

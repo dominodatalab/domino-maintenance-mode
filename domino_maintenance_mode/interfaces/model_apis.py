@@ -34,11 +34,7 @@ class ModelVersionId:
 class Interface(ExecutionInterface[ModelVersionId]):
     page_size: int
 
-    def __init__(
-        self,
-        models_page_size,
-        **kwargs
-    ):
+    def __init__(self, models_page_size, **kwargs):
         self.page_size = models_page_size
 
     def id_from_value(self, v) -> ModelVersionId:
@@ -50,7 +46,9 @@ class Interface(ExecutionInterface[ModelVersionId]):
     def list_running(
         self, projects: List[Project]
     ) -> List[Execution[ModelVersionId]]:
-        logger.info(F"Scanning Model API Versions by Project. Page size: {self.page_size}")
+        logger.info(
+            f"Scanning Model API Versions by Project. Page size: {self.page_size}"
+        )
         running_executions = []
         for project in tqdm(projects, desc="Projects"):
             try:

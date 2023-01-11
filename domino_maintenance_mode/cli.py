@@ -21,10 +21,21 @@ from domino_maintenance_mode.interfaces.workspaces import (
 from domino_maintenance_mode.manager import Manager
 from domino_maintenance_mode.projects import fetch_projects
 
+
 def __get_execution_interfaces(**kwargs) -> Dict[str, ExecutionInterface[Any]]:
-    return { 
-        interface.singular(): interface for interface in [interface(**kwargs) for interface in [AppInterface, ModelApiInterface, WorkspaceInterface, ScheduledJobInterface]] 
+    return {
+        interface.singular(): interface
+        for interface in [
+            interface(**kwargs)
+            for interface in [
+                AppInterface,
+                ModelApiInterface,
+                WorkspaceInterface,
+                ScheduledJobInterface,
+            ]
+        ]
     }
+
 
 def __load_state(f) -> Dict[str, Any]:
     state = {}
@@ -45,17 +56,13 @@ def cli():
     "--workspaces-page-size",
     default=50,
     type=click.IntRange(min=0),
-    help=(
-        "Number of workspaces to fetch from the API per request."
-    ),
+    help=("Number of workspaces to fetch from the API per request."),
 )
 @click.option(
     "--models-page-size",
     type=click.IntRange(min=0),
     default=10,
-    help=(
-        "Number of models to fetch from the API per request."
-    ),
+    help=("Number of models to fetch from the API per request."),
 )
 def snapshot(output, **kwargs):
     """Take a snapshot of running executions.
