@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, List, Optional, TypeVar
 
+import aiohttp
 import requests
 
 from domino_maintenance_mode.projects import Project
@@ -29,6 +30,7 @@ class FailedExecution(Generic[Id]):
 
 class ExecutionInterface(ABC, Generic[Id]):
     session: Optional[requests.Session] = None
+    async_session: Optional[aiohttp.ClientSession] = None
 
     def __init__(self, **kwargs):
         pass
@@ -48,6 +50,19 @@ class ExecutionInterface(ABC, Generic[Id]):
             self.session.verify = should_verify()
         return self.session
 
+    async def __get__async_session(self) -> aiohttp.ClientSession:
+        if self.async_session is None:
+            api_key = get_api_key()
+            self.hostname = get_hostname()
+            # TODO: Ability to trust custom certs?
+            self.async_session = await aiohttp.ClientSession(
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Domino-Api-Key": api_key,
+                },
+                verify_ssl=should_verify())
+        return self.async_session
+
     def id_from_value(self, v) -> Id:
         # Override for non-primitive Id types
         return v
@@ -62,6 +77,29 @@ class ExecutionInterface(ABC, Generic[Id]):
                 f"API returned error ({response.status_code}): {response.text}"
             )
         return response.json()
+
+    async def async_get(self, path: str, success_code: int = 200) -> dict:
+        api_key = get_api_key()
+        hostname = get_hostname()
+        verify = should_verify()
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f"{hostname}{path}"
+                async with session.get(url=url,
+                                       headers={
+                                           "Content-Type": "application/json",
+                                           "X-Domino-Api-Key": api_key,
+                                       },
+                                       verify_ssl=verify) as response:
+                    resp = await response.text()
+                    if response.status != success_code:
+                        raise Exception(
+                            f"API returned error ({response.status}): {resp.text}"
+                        )
+                    return await response.json()
+        except Exception as e:
+            print(f"Unable to get url {path} due to {e}.")
 
     def post(
         self, path: str, json: Optional[dict] = None, success_code: int = 200
@@ -92,7 +130,7 @@ class ExecutionInterface(ABC, Generic[Id]):
         pass
 
     @abstractmethod
-    def list_running(self, projects: List[Project]) -> List[Execution[Id]]:
+    async def list_running(self, projects: List[Project]) -> List[Execution[Id]]:
         """List non-stopped (running or pending) executions."""
         pass
 

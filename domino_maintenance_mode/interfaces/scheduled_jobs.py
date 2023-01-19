@@ -26,7 +26,7 @@ class Interface(ExecutionInterface[ScheduledJobId]):
     def singular(self) -> str:
         return "Scheduled Job"
 
-    def list_running(
+    async def list_running(
         self, projects: List[Project]
     ) -> List[Execution[ScheduledJobId]]:
         logger.info("Scanning Scheduled Jobs by Project")

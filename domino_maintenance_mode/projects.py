@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
+import aiohttp
 import requests
 
 from domino_maintenance_mode.util import (
@@ -20,24 +21,24 @@ class Project:
     owner: str
 
 
-def fetch_projects() -> List[Project]:
+async def fetch_projects() -> List[Project]:
     api_key = get_api_key()
     hostname = get_hostname()
     verify = should_verify()
-    data = requests.get(
-        f"{hostname}/v4/projects",
-        headers={
-            "Content-Type": "application/json",
-            "X-Domino-Api-Key": api_key,
-        },
-        verify=verify,
-    ).json()
-    logger.info(f"Found {len(data)} projects.")
-    return list(
-        map(
-            lambda project: Project(
-                project["id"], project["name"], project["ownerUsername"]
-            ),
-            data,
-        )
-    )
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url=f"{hostname}/v4/projects?ownerId=629f4cb5d730c143f30404cc",
+                                               headers={
+                                                   "Content-Type": "application/json",
+                                                   "X-Domino-Api-Key": api_key,
+                                               },
+                                           verify_ssl=verify) as response:
+            data = await response.json()
+            logger.info(f"Found {len(data)}.")
+            return list(
+                map(
+                    lambda project: Project(
+                        project["id"], project["name"], project["ownerUsername"]
+                    ),
+                    data,
+                )
+            )

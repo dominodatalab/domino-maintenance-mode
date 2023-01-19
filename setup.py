@@ -15,6 +15,8 @@ setuptools.setup(
         "click",
         "requests",
         "tqdm",
+        "asyncio",
+        "aiohttp",
         "types-requests",
     ],
     entry_points={

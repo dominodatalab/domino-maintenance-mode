@@ -6,6 +6,7 @@ from dataclasses import asdict
 from typing import Any, Dict
 
 import click
+from asyncio import run as aiorun
 
 from domino_maintenance_mode.execution_interface import ExecutionInterface
 from domino_maintenance_mode.interfaces.apps import Interface as AppInterface
@@ -64,23 +65,30 @@ def cli():
     default=10,
     help=("Number of models to fetch from the API per request."),
 )
+@click.option(
+    "--models-concurrency",
+    type=click.IntRange(min=0),
+    default=10,
+    help=("Number of concurrent API per request for the models entity."),
+)
 def snapshot(output, **kwargs):
+    aiorun(_async_snapshot(output, **kwargs))
+
+cli.add_command(snapshot)
+
+async def _async_snapshot(output, **kwargs):
     """Take a snapshot of running executions.
 
     OUTPUT: Path to write snapshot file to. Must not exist.
     """
-    projects = fetch_projects()
-    state = {
-        interface.singular(): list(
-            map(asdict, interface.list_running(projects))
-        )
-        for interface in __get_execution_interfaces(**kwargs).values()
-    }
+    projects = await fetch_projects()
+    state = {}
+    
+    for interface in __get_execution_interfaces(**kwargs).values():
+        state[interface.singular()] = map(asdict, await interface.list_running(projects))
+
+    print(state)
     json.dump(state, output)
-
-
-cli.add_command(snapshot)
-
 
 @click.command()
 @click.argument("snapshot", type=click.File("r"))

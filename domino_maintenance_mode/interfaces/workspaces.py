@@ -40,7 +40,7 @@ class Interface(ExecutionInterface[WorkspaceId]):
     def singular(self) -> str:
         return "Workspace"
 
-    def list_running(
+    async def list_running(
         self, projects: List[Project]
     ) -> List[Execution[WorkspaceId]]:
         logger.info(f"Scanning Workspaces. Page size: {self.page_size}")
