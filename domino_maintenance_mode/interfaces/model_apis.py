@@ -1,7 +1,10 @@
 import logging
-import asyncio
 from dataclasses import dataclass
 from typing import List
+
+from domino_maintenance_mode.util import (
+    gather_with_concurrency
+)
 
 from tqdm import tqdm  # type: ignore
 
@@ -36,9 +39,9 @@ class Interface(ExecutionInterface[ModelVersionId]):
     page_size: int
     concurrency: int
 
-    def __init__(self, models_page_size, models_concurrency, **kwargs):
+    def __init__(self, models_page_size, concurrency, **kwargs):
         self.page_size = models_page_size
-        self.concurrency = models_concurrency
+        self.concurrency = concurrency
 
     def id_from_value(self, v) -> ModelVersionId:
         return ModelVersionId(**v)
@@ -46,26 +49,27 @@ class Interface(ExecutionInterface[ModelVersionId]):
     def singular(self) -> str:
         return "Model API Version"
 
-    async def gather_with_concurrency(self, n, *coros):
-        semaphore = asyncio.Semaphore(n)
-
-        async def sem_coro(coro):
-            async with semaphore:
-                return await coro
-        return await asyncio.gather(*(sem_coro(c) for c in coros))
-
     async def list_running(self, projects: List[Project]) -> List[Execution[ModelVersionId]]:
+        logger.info("Scanning Models by Project")
         pbar = tqdm(total=len(projects), desc="Projects")
-        ret = await self.gather_with_concurrency(self.concurrency, *[self.list_models_by_project(project, pbar) for project in projects])
+        ret = await gather_with_concurrency(self.concurrency, *[self.list_models_by_project(project, pbar) for project in projects])
 
         return [item for sublist in ret for item in sublist]
     
     async def list_models_by_project(self, project: Project, pbar) -> List[Execution[ModelVersionId]]:
         running_executions = [] 
 
-        models = await self.async_get(
-                    f"/v4/modelManager/getModels?projectId={project._id}"
+        try:
+            models = await self.async_get(
+                        f"/v4/modelManager/getModels?projectId={project._id}"
+                    )
+        except Exception as e:
+            logger.error(
+                (
+                    f"Exception while querying models for "
+                    f"project '{project._id}': {e}"
                 )
+            )
 
         for model in tqdm(models, desc="Models"):
             try:

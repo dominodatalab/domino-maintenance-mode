@@ -56,20 +56,20 @@ def cli():
 @click.option(
     "--workspaces-page-size",
     default=50,
-    type=click.IntRange(min=0),
+    type=click.IntRange(min=1),
     help=("Number of workspaces to fetch from the API per request."),
 )
 @click.option(
     "--models-page-size",
-    type=click.IntRange(min=0),
+    type=click.IntRange(min=1),
     default=10,
     help=("Number of models to fetch from the API per request."),
 )
 @click.option(
-    "--models-concurrency",
-    type=click.IntRange(min=0),
+    "--concurrency",
+    type=click.IntRange(min=1),
     default=10,
-    help=("Number of concurrent API per request for the models entity."),
+    help=("Number of concurrent API per request per project id."),
 )
 def snapshot(output, **kwargs):
     aiorun(_async_snapshot(output, **kwargs))
@@ -85,9 +85,8 @@ async def _async_snapshot(output, **kwargs):
     state = {}
     
     for interface in __get_execution_interfaces(**kwargs).values():
-        state[interface.singular()] = map(asdict, await interface.list_running(projects))
+        state[interface.singular()] = list(map(asdict, await interface.list_running(projects)))
 
-    print(state)
     json.dump(state, output)
 
 @click.command()
