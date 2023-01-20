@@ -43,6 +43,7 @@ class Interface(ExecutionInterface[ScheduledJobId]):
     
     async def list_scheduled_jobs_by_project(self, project: Project, pbar) -> List[Execution[ScheduledJobId]]:
         running_executions = []
+        jobs = []
 
         try:
             jobs = await self.async_get(

@@ -58,6 +58,7 @@ class Interface(ExecutionInterface[ModelVersionId]):
     
     async def list_models_by_project(self, project: Project, pbar) -> List[Execution[ModelVersionId]]:
         running_executions = [] 
+        models = []
 
         try:
             models = await self.async_get(
