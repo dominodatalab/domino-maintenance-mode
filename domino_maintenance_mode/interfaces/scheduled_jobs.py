@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
 from typing import List
+import aiohttp
 
 from tqdm import tqdm  # type: ignore
 
@@ -34,20 +35,19 @@ class Interface(ExecutionInterface[ScheduledJobId]):
     def singular(self) -> str:
         return "Scheduled Job"
 
-    async def list_running(self, projects: List[Project]) -> List[Execution[ScheduledJobId]]:
+    async def list_running(self, session: aiohttp.ClientSession, projects: List[Project]) -> List[Execution[ScheduledJobId]]:
         logger.info("Scanning Scheduled Jobs by Project")
         pbar = tqdm(total=len(projects), desc="Projects")
-        ret = await gather_with_concurrency(self.concurrency, *[self.list_scheduled_jobs_by_project(project, pbar) for project in projects])
+        ret = await gather_with_concurrency(self.concurrency, *[self.list_scheduled_jobs_by_project(session, project, pbar) for project in projects])
 
         return [item for sublist in ret for item in sublist]
     
-    async def list_scheduled_jobs_by_project(self, project: Project, pbar) -> List[Execution[ScheduledJobId]]:
+    async def list_scheduled_jobs_by_project(self, session: aiohttp.ClientSession, project: Project, pbar) -> List[Execution[ScheduledJobId]]:
         running_executions = []
         jobs = []
 
-
         try:
-            jobs = await self.async_get(
+            jobs = await self.async_get(session,
                         f"/v4/projects/{project._id}/scheduledjobs"
                     )
         except Exception as e:

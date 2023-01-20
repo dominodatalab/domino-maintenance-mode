@@ -5,7 +5,6 @@ from typing import Generic, List, Optional, TypeVar
 import aiohttp
 import requests
 import backoff
-import random
 
 from domino_maintenance_mode.projects import Project
 from domino_maintenance_mode.util import (
@@ -29,7 +28,6 @@ class FailedExecution(Generic[Id]):
     execution: Execution[Id]
     message: str
 
-
 class ExecutionInterface(ABC, Generic[Id]):
     session: Optional[requests.Session] = None
     async_session: Optional[aiohttp.ClientSession] = None
@@ -52,18 +50,6 @@ class ExecutionInterface(ABC, Generic[Id]):
             self.session.verify = should_verify()
         return self.session
 
-    async def __get__async_session(self) -> aiohttp.ClientSession:
-        if self.async_session is None:
-            api_key = get_api_key()
-            self.hostname = get_hostname()
-            # TODO: Ability to trust custom certs?
-            self.async_session = await aiohttp.ClientSession(
-                headers={
-                    "Content-Type": "application/json",
-                    "X-Domino-Api-Key": api_key,
-                },
-                verify_ssl=should_verify())
-        return self.async_session
 
     def id_from_value(self, v) -> Id:
         # Override for non-primitive Id types
@@ -85,27 +71,26 @@ class ExecutionInterface(ABC, Generic[Id]):
         max_tries=3, 
         jitter=backoff.random_jitter,
         factor=0.5)
-    async def async_get(self, path: str, success_code: int = 200) -> dict:
+    async def async_get(self, session: aiohttp.ClientSession, path: str, success_code: int = 200) -> dict:
         api_key = get_api_key()
         hostname = get_hostname()
         verify = should_verify()
 
         try:
-            async with aiohttp.ClientSession() as session:
-                url = f"{hostname}{path}"
+            url = f"{hostname}{path}"
 
-                async with session.get(url=url,
-                                       headers={
-                                           "Content-Type": "application/json",
-                                           "X-Domino-Api-Key": api_key,
-                                       },
-                                       verify_ssl=verify) as response:
-                    resp = await response.text()
-                    if response.status != success_code:
-                        raise Exception(
-                            f"API returned error ({response.status}): {resp.text}"
-                        )
-                    return await response.json()
+            async with session.get(url=url,
+                                    headers={
+                                        "Content-Type": "application/json",
+                                        "X-Domino-Api-Key": api_key,
+                                    },
+                                    verify_ssl=verify) as response:
+                resp = await response.text()
+                if response.status != success_code:
+                    raise Exception(
+                        f"API returned error ({response.status}): {resp.text}"
+                    )
+                return await response.json()
         except Exception as e:
             print(f"Unable to get url {path} due to {e}.")
             raise e
@@ -139,7 +124,7 @@ class ExecutionInterface(ABC, Generic[Id]):
         pass
 
     @abstractmethod
-    async def list_running(self, projects: List[Project]) -> List[Execution[Id]]:
+    async def list_running(self, session: aiohttp.ClientSession, projects: List[Project]) -> List[Execution[Id]]:
         """List non-stopped (running or pending) executions."""
         pass
 

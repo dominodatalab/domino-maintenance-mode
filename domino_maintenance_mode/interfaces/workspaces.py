@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List
+import aiohttp
 
 from tqdm import tqdm  # type: ignore
 
@@ -41,7 +42,7 @@ class Interface(ExecutionInterface[WorkspaceId]):
         return "Workspace"
 
     async def list_running(
-        self, projects: List[Project]
+        self, session: aiohttp.ClientSession, projects: List[Project]
     ) -> List[Execution[WorkspaceId]]:
         logger.info(f"Scanning Workspaces. Page size: {self.page_size}")
 

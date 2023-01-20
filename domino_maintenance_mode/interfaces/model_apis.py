@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
 from typing import List
+import aiohttp
 
 from domino_maintenance_mode.util import (
     gather_with_concurrency
@@ -49,19 +50,19 @@ class Interface(ExecutionInterface[ModelVersionId]):
     def singular(self) -> str:
         return "Model API Version"
 
-    async def list_running(self, projects: List[Project]) -> List[Execution[ModelVersionId]]:
+    async def list_running(self, session: aiohttp.ClientSession, projects: List[Project]) -> List[Execution[ModelVersionId]]:
         logger.info("Scanning Models by Project")
         pbar = tqdm(total=len(projects), desc="Projects")
-        ret = await gather_with_concurrency(self.concurrency, *[self.list_models_by_project(project, pbar) for project in projects])
+        ret = await gather_with_concurrency(self.concurrency, *[self.list_models_by_project(session, project, pbar) for project in projects])
 
         return [item for sublist in ret for item in sublist]
     
-    async def list_models_by_project(self, project: Project, pbar) -> List[Execution[ModelVersionId]]:
+    async def list_models_by_project(self, session: aiohttp.ClientSession, project: Project, pbar) -> List[Execution[ModelVersionId]]:
         running_executions = [] 
         models = []
 
         try:
-            models = await self.async_get(
+            models = await self.async_get(session, 
                         f"/v4/modelManager/getModels?projectId={project._id}"
                     )
         except Exception as e:
@@ -77,14 +78,14 @@ class Interface(ExecutionInterface[ModelVersionId]):
                 versions = []
                 page = 1
                 query = f"pageNumber={page}&pageSize={self.page_size}"
-                data = await self.async_get(
+                data = await self.async_get(session,
                     f"/models/{model['id']}/versions/json?{query}"
                 )
                 while len(data["results"]) > 0:
                     versions.extend(data["results"])
                     page += 1
                     query = f"pageNumber={page}&pageSize={self.page_size}"
-                    data = await self.async_get(
+                    data = await self.async_get(session,
                         f"/models/{model['id']}/versions/json?{query}"
                     )
                 for version in versions:

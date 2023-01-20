@@ -5,6 +5,7 @@ import os
 from dataclasses import asdict
 from typing import Any, Dict
 
+import aiohttp
 import click
 from asyncio import run as aiorun
 
@@ -21,7 +22,10 @@ from domino_maintenance_mode.interfaces.workspaces import (
 )
 from domino_maintenance_mode.manager import Manager
 from domino_maintenance_mode.projects import fetch_projects
-
+from domino_maintenance_mode.util import (
+    get_api_key,
+    should_verify,
+)
 
 def __get_execution_interfaces(**kwargs) -> Dict[str, ExecutionInterface[Any]]:
     return {
@@ -84,8 +88,9 @@ async def _async_snapshot(output, **kwargs):
     projects = await fetch_projects()
     state = {}
     
-    for interface in __get_execution_interfaces(**kwargs).values():
-        state[interface.singular()] = list(map(asdict, await interface.list_running(projects)))
+    async with aiohttp.ClientSession() as session:
+        for interface in __get_execution_interfaces(**kwargs).values():
+            state[interface.singular()] = list(map(asdict, await interface.list_running(session, projects)))
 
     json.dump(state, output)
 
