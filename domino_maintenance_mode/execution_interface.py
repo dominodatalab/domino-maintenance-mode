@@ -4,6 +4,8 @@ from typing import Generic, List, Optional, TypeVar
 
 import aiohttp
 import requests
+import backoff
+import random
 
 from domino_maintenance_mode.projects import Project
 from domino_maintenance_mode.util import (
@@ -78,6 +80,11 @@ class ExecutionInterface(ABC, Generic[Id]):
             )
         return response.json()
 
+    @backoff.on_exception(backoff.expo, 
+        Exception, 
+        max_tries=3, 
+        jitter=backoff.random_jitter,
+        factor=0.5)
     async def async_get(self, path: str, success_code: int = 200) -> dict:
         api_key = get_api_key()
         hostname = get_hostname()
@@ -86,6 +93,7 @@ class ExecutionInterface(ABC, Generic[Id]):
         try:
             async with aiohttp.ClientSession() as session:
                 url = f"{hostname}{path}"
+
                 async with session.get(url=url,
                                        headers={
                                            "Content-Type": "application/json",
@@ -100,6 +108,7 @@ class ExecutionInterface(ABC, Generic[Id]):
                     return await response.json()
         except Exception as e:
             print(f"Unable to get url {path} due to {e}.")
+            raise e
 
     def post(
         self, path: str, json: Optional[dict] = None, success_code: int = 200

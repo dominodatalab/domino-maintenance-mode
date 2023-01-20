@@ -45,6 +45,7 @@ class Interface(ExecutionInterface[ScheduledJobId]):
         running_executions = []
         jobs = []
 
+
         try:
             jobs = await self.async_get(
                         f"/v4/projects/{project._id}/scheduledjobs"
@@ -56,7 +57,6 @@ class Interface(ExecutionInterface[ScheduledJobId]):
                         f"for Project '{project._id}': {e}"
                     )
                 )
-
         for job in tqdm(jobs, desc="Scheduled Jobs"):
             try:
                 if not job["isPaused"]:
