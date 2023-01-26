@@ -4,6 +4,12 @@ Easily place Domino in maintenance mode for upgrades and restore afterwards.
 ![Test](https://github.com/dominodatalab/domino-maintenance-mode/actions/workflows/test.yaml/badge.svg)
 [![Docker Repository on Quay](https://quay.io/repository/domino/dmm/status "Docker Repository on Quay")](https://quay.io/repository/domino/dmm)
 
+# How to report bugs
+
+Please file in a ticket to the Platform Services team.
+
+[Create a Jira ticket](https://dominodatalab.atlassian.net/secure/CreateIssueDetails!init.jspa?pid=10103&issuetype=10004&customfield_12800=10800&customfield_12907=11003&customfield_12959=11118&versions=12744&fixVersions=12744&customfield_12952=12138&priority=4&summary=%5BMaintenance%20Mode%20Script%5D%20-%20)
+
 # Warnings
 
 * It is important that the system is not being used while taking a snapshot until after the restore is complete. Changes to running executions during or after taking a snapshot of the system may result in executions not being fully stopped, or properly restored. If there are new Model API versions that are not fully updated (new version is in running state and old version is fully stopped), please allow this process to complete before using this tool.
