@@ -37,7 +37,7 @@ class Interface(ExecutionInterface[ModelVersionId]):
     page_size: int
     concurrency: int
 
-    def __init__(self, models_page_size, concurrency, **kwargs):
+    def __init__(self, models_page_size=None, concurrency=None, **kwargs):
         self.page_size = models_page_size
         self.concurrency = concurrency
 

@@ -32,7 +32,7 @@ class WorkspaceId:
 class Interface(ExecutionInterface[WorkspaceId]):
     page_size: int
 
-    def __init__(self, workspaces_page_size, **kwargs):
+    def __init__(self, workspaces_page_size=None, **kwargs):
         self.page_size = workspaces_page_size
 
     def id_from_value(self, v) -> WorkspaceId:
