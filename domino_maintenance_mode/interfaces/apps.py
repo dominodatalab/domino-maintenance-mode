@@ -38,7 +38,9 @@ class Interface(ExecutionInterface[AppId]):
     def singular(self) -> str:
         return "App"
 
-    async def list_running(self, session: aiohttp.ClientSession, projects: List[Project]) -> List[Execution[AppId]]:
+    async def list_running(
+        self, session: aiohttp.ClientSession, projects: List[Project]
+    ) -> List[Execution[AppId]]:
         logger.info("Scanning Apps")
         data = self.get("/v4/modelProducts")
         executions = []

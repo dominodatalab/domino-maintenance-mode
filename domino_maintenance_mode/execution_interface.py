@@ -28,6 +28,7 @@ class FailedExecution(Generic[Id]):
     execution: Execution[Id]
     message: str
 
+
 class ExecutionInterface(ABC, Generic[Id]):
     session: Optional[requests.Session] = None
     async_session: Optional[aiohttp.ClientSession] = None
@@ -50,7 +51,6 @@ class ExecutionInterface(ABC, Generic[Id]):
             self.session.verify = should_verify()
         return self.session
 
-
     def id_from_value(self, v) -> Id:
         # Override for non-primitive Id types
         return v
@@ -66,12 +66,19 @@ class ExecutionInterface(ABC, Generic[Id]):
             )
         return response.json()
 
-    @backoff.on_exception(backoff.expo, 
-        Exception, 
-        max_tries=3, 
+    @backoff.on_exception(
+        backoff.expo,
+        Exception,
+        max_tries=3,
         jitter=backoff.random_jitter,
-        factor=0.5)
-    async def async_get(self, session: aiohttp.ClientSession, path: str, success_code: int = 200) -> dict:
+        factor=0.5,
+    )
+    async def async_get(
+        self,
+        session: aiohttp.ClientSession,
+        path: str,
+        success_code: int = 200,
+    ) -> dict:
         api_key = get_api_key()
         hostname = get_hostname()
         verify = should_verify()
@@ -79,12 +86,14 @@ class ExecutionInterface(ABC, Generic[Id]):
         try:
             url = f"{hostname}{path}"
 
-            async with session.get(url=url,
-                                    headers={
-                                        "Content-Type": "application/json",
-                                        "X-Domino-Api-Key": api_key,
-                                    },
-                                    verify_ssl=verify) as response:
+            async with session.get(
+                url=url,
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Domino-Api-Key": api_key,
+                },
+                verify_ssl=verify,
+            ) as response:
                 resp = await response.text()
                 if response.status != success_code:
                     raise Exception(
@@ -124,7 +133,9 @@ class ExecutionInterface(ABC, Generic[Id]):
         pass
 
     @abstractmethod
-    async def list_running(self, session: aiohttp.ClientSession, projects: List[Project]) -> List[Execution[Id]]:
+    async def list_running(
+        self, session: aiohttp.ClientSession, projects: List[Project]
+    ) -> List[Execution[Id]]:
         """List non-stopped (running or pending) executions."""
         pass
 

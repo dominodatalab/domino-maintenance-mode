@@ -26,18 +26,22 @@ async def fetch_projects() -> List[Project]:
     hostname = get_hostname()
     verify = should_verify()
     async with aiohttp.ClientSession() as session:
-        async with session.get(url=f"{hostname}/v4/projects?ownerId=629f4cb5d730c143f30404cc",
-                                               headers={
-                                                   "Content-Type": "application/json",
-                                                   "X-Domino-Api-Key": api_key,
-                                               },
-                                           verify_ssl=verify) as response:
+        async with session.get(
+            url=f"{hostname}/v4/projects?ownerId=629f4cb5d730c143f30404cc",
+            headers={
+                "Content-Type": "application/json",
+                "X-Domino-Api-Key": api_key,
+            },
+            verify_ssl=verify,
+        ) as response:
             data = await response.json()
             logger.info(f"Found {len(data)}.")
             return list(
                 map(
                     lambda project: Project(
-                        project["id"], project["name"], project["ownerUsername"]
+                        project["id"],
+                        project["name"],
+                        project["ownerUsername"],
                     ),
                     data,
                 )

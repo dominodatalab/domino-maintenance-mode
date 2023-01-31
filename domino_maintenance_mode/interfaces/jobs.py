@@ -12,7 +12,9 @@ class Interface(ExecutionInterface[str]):
     def singular(self) -> str:
         return "Job"
 
-    async def list_running(self, session: aiohttp.ClientSession, projects: List[Project]) -> List[Execution[str]]:
+    async def list_running(
+        self, session: aiohttp.ClientSession, projects: List[Project]
+    ) -> List[Execution[str]]:
         # TODO
         # Iterate Projects GET /projects/portfolio/getProjectPortfolio
         # GET /jobs?projectId

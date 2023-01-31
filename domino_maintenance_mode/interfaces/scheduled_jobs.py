@@ -11,11 +11,10 @@ from domino_maintenance_mode.execution_interface import (
 )
 from domino_maintenance_mode.projects import Project
 
-from domino_maintenance_mode.util import (
-    gather_with_concurrency
-)
+from domino_maintenance_mode.util import gather_with_concurrency
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class ScheduledJobId:
@@ -35,28 +34,38 @@ class Interface(ExecutionInterface[ScheduledJobId]):
     def singular(self) -> str:
         return "Scheduled Job"
 
-    async def list_running(self, session: aiohttp.ClientSession, projects: List[Project]) -> List[Execution[ScheduledJobId]]:
+    async def list_running(
+        self, session: aiohttp.ClientSession, projects: List[Project]
+    ) -> List[Execution[ScheduledJobId]]:
         logger.info("Scanning Scheduled Jobs by Project")
         pbar = tqdm(total=len(projects), desc="Projects")
-        ret = await gather_with_concurrency(self.concurrency, *[self.list_scheduled_jobs_by_project(session, project, pbar) for project in projects])
+        ret = await gather_with_concurrency(
+            self.concurrency,
+            *[
+                self.list_scheduled_jobs_by_project(session, project, pbar)
+                for project in projects
+            ],
+        )
 
         return [item for sublist in ret for item in sublist]
-    
-    async def list_scheduled_jobs_by_project(self, session: aiohttp.ClientSession, project: Project, pbar) -> List[Execution[ScheduledJobId]]:
+
+    async def list_scheduled_jobs_by_project(
+        self, session: aiohttp.ClientSession, project: Project, pbar
+    ) -> List[Execution[ScheduledJobId]]:
         running_executions = []
         jobs = []
 
         try:
-            jobs = await self.async_get(session,
-                        f"/v4/projects/{project._id}/scheduledjobs"
-                    )
+            jobs = await self.async_get(
+                session, f"/v4/projects/{project._id}/scheduledjobs"
+            )
         except Exception as e:
-                logger.error(
-                    (
-                        f"Exception while querying Scheduled Jobs "
-                        f"for Project '{project._id}': {e}"
-                    )
+            logger.error(
+                (
+                    f"Exception while querying Scheduled Jobs "
+                    f"for Project '{project._id}': {e}"
                 )
+            )
         for job in tqdm(jobs, desc="Scheduled Jobs"):
             try:
                 if not job["isPaused"]:

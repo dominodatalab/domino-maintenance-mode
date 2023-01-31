@@ -27,6 +27,7 @@ from domino_maintenance_mode.util import (
     should_verify,
 )
 
+
 def __get_execution_interfaces(**kwargs) -> Dict[str, ExecutionInterface[Any]]:
     return {
         interface.singular(): interface
@@ -78,7 +79,9 @@ def cli():
 def snapshot(output, **kwargs):
     aiorun(_async_snapshot(output, **kwargs))
 
+
 cli.add_command(snapshot)
+
 
 async def _async_snapshot(output, **kwargs):
     """Take a snapshot of running executions.
@@ -87,12 +90,15 @@ async def _async_snapshot(output, **kwargs):
     """
     projects = await fetch_projects()
     state = {}
-    
+
     async with aiohttp.ClientSession() as session:
         for interface in __get_execution_interfaces(**kwargs).values():
-            state[interface.singular()] = list(map(asdict, await interface.list_running(session, projects)))
+            state[interface.singular()] = list(
+                map(asdict, await interface.list_running(session, projects))
+            )
 
     json.dump(state, output)
+
 
 @click.command()
 @click.argument("snapshot", type=click.File("r"))
