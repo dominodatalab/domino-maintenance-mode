@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 
@@ -25,3 +26,13 @@ def get_hostname() -> str:
 
 def should_verify() -> bool:
     return os.environ.get("DOMINO_SSL_NO_VERIFY") != "true"
+
+
+async def gather_with_concurrency(n, *coros):
+    semaphore = asyncio.Semaphore(n)
+
+    async def sem_coro(coro):
+        async with semaphore:
+            return await coro
+
+    return await asyncio.gather(*(sem_coro(c) for c in coros))

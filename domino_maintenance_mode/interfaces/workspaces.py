@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
+import aiohttp
 from tqdm import tqdm  # type: ignore
 
 from domino_maintenance_mode.execution_interface import (
@@ -21,6 +22,8 @@ BASE_PATH: str = "/v4/workspace"
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_WORKSPACES_PAGE_SIZE = 50
+
 
 @dataclass
 class WorkspaceId:
@@ -29,26 +32,31 @@ class WorkspaceId:
 
 
 class Interface(ExecutionInterface[WorkspaceId]):
+    page_size: int
+
+    def __init__(self, workspaces_page_size=None, **kwargs):
+        self.page_size = workspaces_page_size
+
     def id_from_value(self, v) -> WorkspaceId:
         return WorkspaceId(**v)
 
     def singular(self) -> str:
         return "Workspace"
 
-    def list_running(
-        self, projects: List[Project]
+    async def list_running(
+        self, session: aiohttp.ClientSession, projects: List[Project]
     ) -> List[Execution[WorkspaceId]]:
-        logger.info("Scanning Workspaces")
+        logger.info(f"Scanning Workspaces. Page size: {self.page_size}")
+
         project_lookup = {
             (project.owner, project.name): project._id for project in projects
         }
 
         offset = 0
-        limit = 50
         workspaces: Dict[str, Any] = {}
         try:
             while True:
-                params = f"limit={limit}&offset={offset}"
+                params = f"limit={self.page_size}&offset={offset}"
                 data = self.get(f"{BASE_PATH}/adminDashboardRowData?{params}")
                 last_count = len(workspaces)
                 for entry in data.get("tableRows", []):
@@ -62,14 +70,14 @@ class Interface(ExecutionInterface[WorkspaceId]):
                         f"Got {len(data.get('tableRows', []))}"
                         f" entries, {len(workspaces) - last_count} new,"
                         f" offset: {offset},"
-                        f" limit: {limit}"
+                        f" limit: {self.page_size}"
                     )
                 )
                 if len(workspaces) >= data["totalEntries"]:
                     break
                 offset += 1
                 # If the list of workspaces has changed, loop again
-                if offset * limit >= data["totalEntries"]:
+                if offset * self.page_size >= data["totalEntries"]:
                     raise Exception(
                         (
                             "Number of Workspaces found did not match"
