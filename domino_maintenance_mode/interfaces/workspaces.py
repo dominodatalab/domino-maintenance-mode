@@ -22,6 +22,8 @@ BASE_PATH: str = "/v4/workspace"
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_WORKSPACES_PAGE_SIZE = 50
+
 
 @dataclass
 class WorkspaceId:

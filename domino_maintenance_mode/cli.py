@@ -12,10 +12,16 @@ import click
 from domino_maintenance_mode.execution_interface import ExecutionInterface
 from domino_maintenance_mode.interfaces.apps import Interface as AppInterface
 from domino_maintenance_mode.interfaces.model_apis import (
+    DEFAULT_MODELS_PAGE_SIZE,
+)
+from domino_maintenance_mode.interfaces.model_apis import (
     Interface as ModelApiInterface,
 )
 from domino_maintenance_mode.interfaces.scheduled_jobs import (
     Interface as ScheduledJobInterface,
+)
+from domino_maintenance_mode.interfaces.workspaces import (
+    DEFAULT_WORKSPACES_PAGE_SIZE,
 )
 from domino_maintenance_mode.interfaces.workspaces import (
     Interface as WorkspaceInterface,
@@ -56,14 +62,14 @@ def cli():
 @click.argument("output", type=click.File("x"))
 @click.option(
     "--workspaces-page-size",
-    default=50,
+    default=DEFAULT_WORKSPACES_PAGE_SIZE,
     type=click.IntRange(min=1),
     help=("Number of workspaces to fetch from the API per request."),
 )
 @click.option(
     "--models-page-size",
     type=click.IntRange(min=1),
-    default=10,
+    default=DEFAULT_MODELS_PAGE_SIZE,
     help=("Number of models to fetch from the API per request."),
 )
 @click.option(

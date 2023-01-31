@@ -25,6 +25,8 @@ RUNNING_OR_LAUNCHING_STATES = {
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_MODELS_PAGE_SIZE = 10
+
 
 @dataclass
 class ModelVersionId:
@@ -37,7 +39,12 @@ class Interface(ExecutionInterface[ModelVersionId]):
     page_size: int
     concurrency: int
 
-    def __init__(self, models_page_size=None, concurrency=None, **kwargs):
+    def __init__(
+        self,
+        models_page_size=DEFAULT_MODELS_PAGE_SIZE,
+        concurrency=1,
+        **kwargs,
+    ):
         self.page_size = models_page_size
         self.concurrency = concurrency
 
