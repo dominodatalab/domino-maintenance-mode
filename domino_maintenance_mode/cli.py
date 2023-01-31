@@ -22,11 +22,6 @@ from domino_maintenance_mode.interfaces.workspaces import (
 )
 from domino_maintenance_mode.manager import Manager
 from domino_maintenance_mode.projects import fetch_projects
-from domino_maintenance_mode.util import (
-    get_api_key,
-    should_verify,
-)
-
 
 def __get_execution_interfaces(**kwargs) -> Dict[str, ExecutionInterface[Any]]:
     return {
