@@ -2,8 +2,8 @@ import logging
 from dataclasses import asdict, dataclass
 from pprint import pformat
 from typing import List
-import aiohttp
 
+import aiohttp
 from tqdm import tqdm  # type: ignore
 
 from domino_maintenance_mode.execution_interface import (

@@ -1,10 +1,8 @@
 import logging
 from dataclasses import dataclass
 from typing import List
+
 import aiohttp
-
-from domino_maintenance_mode.util import gather_with_concurrency
-
 from tqdm import tqdm  # type: ignore
 
 from domino_maintenance_mode.execution_interface import (
@@ -12,6 +10,7 @@ from domino_maintenance_mode.execution_interface import (
     ExecutionInterface,
 )
 from domino_maintenance_mode.projects import Project
+from domino_maintenance_mode.util import gather_with_concurrency
 
 # From ModelVersionStatus.scala
 RUNNING_STATES = {"Running"}

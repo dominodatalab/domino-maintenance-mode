@@ -2,12 +2,12 @@
 import json
 import logging
 import os
+from asyncio import run as aiorun
 from dataclasses import asdict
 from typing import Any, Dict
 
 import aiohttp
 import click
-from asyncio import run as aiorun
 
 from domino_maintenance_mode.execution_interface import ExecutionInterface
 from domino_maintenance_mode.interfaces.apps import Interface as AppInterface

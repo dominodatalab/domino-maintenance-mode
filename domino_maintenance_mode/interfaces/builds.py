@@ -1,4 +1,5 @@
 from typing import List
+
 import aiohttp
 
 from domino_maintenance_mode.execution_interface import (

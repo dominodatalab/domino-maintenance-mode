@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from typing import Generic, List, Optional, TypeVar
 
 import aiohttp
-import requests
 import backoff
+import requests
 
 from domino_maintenance_mode.projects import Project
 from domino_maintenance_mode.util import (

@@ -1,6 +1,5 @@
-import os
-
 import asyncio
+import os
 
 
 def get_api_key() -> str:

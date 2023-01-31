@@ -1,8 +1,8 @@
 import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List
-import aiohttp
 
+import aiohttp
 from tqdm import tqdm  # type: ignore
 
 from domino_maintenance_mode.execution_interface import (
