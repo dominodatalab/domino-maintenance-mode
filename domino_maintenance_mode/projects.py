@@ -26,7 +26,7 @@ async def fetch_projects() -> List[Project]:
     verify = should_verify()
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            url=f"{hostname}/v4/projects?ownerId=629f4cb5d730c143f30404cc",
+            url=f"{hostname}/v4/projects",
             headers={
                 "Content-Type": "application/json",
                 "X-Domino-Api-Key": api_key,
