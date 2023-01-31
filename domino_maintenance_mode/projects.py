@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import List
 
 import aiohttp
-import requests
 
 from domino_maintenance_mode.util import (
     get_api_key,
