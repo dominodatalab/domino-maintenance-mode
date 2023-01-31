@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, List, Optional, TypeVar
 
+import aiohttp
+import backoff
 import requests
 
 from domino_maintenance_mode.projects import Project
@@ -29,8 +31,9 @@ class FailedExecution(Generic[Id]):
 
 class ExecutionInterface(ABC, Generic[Id]):
     session: Optional[requests.Session] = None
+    async_session: Optional[aiohttp.ClientSession] = None
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         pass
 
     def __get_session(self) -> requests.Session:
@@ -63,6 +66,44 @@ class ExecutionInterface(ABC, Generic[Id]):
             )
         return response.json()
 
+    @backoff.on_exception(
+        backoff.expo,
+        Exception,
+        max_tries=3,
+        jitter=backoff.random_jitter,
+        factor=0.5,
+    )
+    async def async_get(
+        self,
+        session: aiohttp.ClientSession,
+        path: str,
+        success_code: int = 200,
+    ) -> dict:
+        api_key = get_api_key()
+        hostname = get_hostname()
+        verify = should_verify()
+
+        try:
+            url = f"{hostname}{path}"
+
+            async with session.get(
+                url=url,
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Domino-Api-Key": api_key,
+                },
+                verify_ssl=verify,
+            ) as response:
+                resp = await response.text()
+                if response.status != success_code:
+                    raise Exception(
+                        f"API returned error ({response.status}): {resp}"
+                    )
+                return await response.json()
+        except Exception as e:
+            print(f"Unable to get url {path} due to {e}.")
+            raise e
+
     def post(
         self, path: str, json: Optional[dict] = None, success_code: int = 200
     ) -> dict:
@@ -92,7 +133,9 @@ class ExecutionInterface(ABC, Generic[Id]):
         pass
 
     @abstractmethod
-    def list_running(self, projects: List[Project]) -> List[Execution[Id]]:
+    async def list_running(
+        self, session: aiohttp.ClientSession, projects: List[Project]
+    ) -> List[Execution[Id]]:
         """List non-stopped (running or pending) executions."""
         pass
 

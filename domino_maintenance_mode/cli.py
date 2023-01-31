@@ -2,13 +2,18 @@
 import json
 import logging
 import os
+from asyncio import run as aiorun
 from dataclasses import asdict
-from typing import Any, Dict, List
+from typing import Any, Dict
 
+import aiohttp
 import click
 
 from domino_maintenance_mode.execution_interface import ExecutionInterface
 from domino_maintenance_mode.interfaces.apps import Interface as AppInterface
+from domino_maintenance_mode.interfaces.model_apis import (
+    DEFAULT_MODELS_PAGE_SIZE,
+)
 from domino_maintenance_mode.interfaces.model_apis import (
     Interface as ModelApiInterface,
 )
@@ -16,27 +21,34 @@ from domino_maintenance_mode.interfaces.scheduled_jobs import (
     Interface as ScheduledJobInterface,
 )
 from domino_maintenance_mode.interfaces.workspaces import (
+    DEFAULT_WORKSPACES_PAGE_SIZE,
+)
+from domino_maintenance_mode.interfaces.workspaces import (
     Interface as WorkspaceInterface,
 )
 from domino_maintenance_mode.manager import Manager
 from domino_maintenance_mode.projects import fetch_projects
 
-__INTERFACES: List[ExecutionInterface[Any]] = [
-    AppInterface(),
-    ModelApiInterface(),
-    WorkspaceInterface(),
-    ScheduledJobInterface(),
-]
 
-EXECUTION_INTERFACES: Dict[str, ExecutionInterface[Any]] = {
-    interface.singular(): interface for interface in __INTERFACES
-}
+def __get_execution_interfaces(**kwargs) -> Dict[str, ExecutionInterface[Any]]:
+    return {
+        interface.singular(): interface
+        for interface in [
+            interface(**kwargs)
+            for interface in [
+                AppInterface,
+                ModelApiInterface,
+                WorkspaceInterface,
+                ScheduledJobInterface,
+            ]
+        ]
+    }
 
 
 def __load_state(f) -> Dict[str, Any]:
     state = {}
     for k, v in json.load(f).items():
-        interface = EXECUTION_INTERFACES[k]
+        interface = __get_execution_interfaces()[k]
         state[k] = list(map(interface.execution_from_dict, v))
     return state
 
@@ -48,22 +60,46 @@ def cli():
 
 @click.command()
 @click.argument("output", type=click.File("x"))
-def snapshot(output):
+@click.option(
+    "--workspaces-page-size",
+    default=DEFAULT_WORKSPACES_PAGE_SIZE,
+    type=click.IntRange(min=1),
+    help=("Number of workspaces to fetch from the API per request."),
+)
+@click.option(
+    "--models-page-size",
+    type=click.IntRange(min=1),
+    default=DEFAULT_MODELS_PAGE_SIZE,
+    help=("Number of models to fetch from the API per request."),
+)
+@click.option(
+    "--concurrency",
+    type=click.IntRange(min=1),
+    default=10,
+    help=("Number of concurrent API per request per project id."),
+)
+def snapshot(output, **kwargs):
+    aiorun(_async_snapshot(output, **kwargs))
+
+
+cli.add_command(snapshot)
+
+
+async def _async_snapshot(output, **kwargs):
     """Take a snapshot of running executions.
 
     OUTPUT: Path to write snapshot file to. Must not exist.
     """
-    projects = fetch_projects()
-    state = {
-        interface.singular(): list(
-            map(asdict, interface.list_running(projects))
-        )
-        for interface in EXECUTION_INTERFACES.values()
-    }
+    projects = await fetch_projects()
+    state = {}
+
+    async with aiohttp.ClientSession() as session:
+        for interface in __get_execution_interfaces(**kwargs).values():
+            state[interface.singular()] = list(
+                map(asdict, await interface.list_running(session, projects))
+            )
+
     json.dump(state, output)
-
-
-cli.add_command(snapshot)
 
 
 @click.command()
@@ -109,7 +145,7 @@ def shutdown(snapshot, **kwargs):
     """
     state = __load_state(snapshot)
     manager = Manager(**kwargs)
-    for interface in EXECUTION_INTERFACES.values():
+    for interface in __get_execution_interfaces().values():
         executions = state[interface.singular()]
         if len(executions) > 0:
             manager.stop(interface, executions)
@@ -161,7 +197,7 @@ def restore(snapshot, **kwargs):
     """
     state = __load_state(snapshot)
     manager = Manager(**kwargs)
-    for interface in EXECUTION_INTERFACES.values():
+    for interface in __get_execution_interfaces().values():
         if interface.is_restartable():
             executions = state[interface.singular()]
             if len(executions) > 0:

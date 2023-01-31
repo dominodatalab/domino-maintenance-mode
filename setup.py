@@ -15,7 +15,10 @@ setuptools.setup(
         "click",
         "requests",
         "tqdm",
+        "asyncio",
+        "aiohttp",
         "types-requests",
+        "backoff",
     ],
     entry_points={
         "console_scripts": ["dmm = domino_maintenance_mode.cli:main"]

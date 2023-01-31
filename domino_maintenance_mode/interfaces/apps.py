@@ -3,6 +3,7 @@ from dataclasses import asdict, dataclass
 from pprint import pformat
 from typing import List
 
+import aiohttp
 from tqdm import tqdm  # type: ignore
 
 from domino_maintenance_mode.execution_interface import (
@@ -38,7 +39,9 @@ class Interface(ExecutionInterface[AppId]):
     def singular(self) -> str:
         return "App"
 
-    def list_running(self, projects: List[Project]) -> List[Execution[AppId]]:
+    async def list_running(
+        self, session: aiohttp.ClientSession, projects: List[Project]
+    ) -> List[Execution[AppId]]:
         logger.info("Scanning Apps")
         data = self.get("/v4/modelProducts")
         executions = []
