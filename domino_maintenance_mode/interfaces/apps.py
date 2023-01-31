@@ -14,8 +14,9 @@ from domino_maintenance_mode.projects import Project
 
 logger = logging.getLogger(__name__)
 
-STOPPED_STATES = {"Stopped"}
-RUNNING_STATES = {"Running"}
+# From https://github.com/cerebrotech/domino/blob/develop/common-core/src/main/scala/domino/common/models/RunStatus.scala  # noqa: E501
+STOPPED_STATES = {"Stopped", "Succeeded", "Failed", "Error"}
+RUNNING_STATES = {"Running", "Serving"}
 
 
 @dataclass
