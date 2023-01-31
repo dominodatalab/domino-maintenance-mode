@@ -52,7 +52,7 @@ class Interface(ExecutionInterface[ScheduledJobId]):
         self, session: aiohttp.ClientSession, project: Project, pbar
     ) -> List[Execution[ScheduledJobId]]:
         running_executions = []
-        jobs = []
+        jobs: dict = {}
 
         try:
             jobs = await self.async_get(

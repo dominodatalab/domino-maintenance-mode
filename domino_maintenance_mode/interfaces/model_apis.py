@@ -66,7 +66,7 @@ class Interface(ExecutionInterface[ModelVersionId]):
         self, session: aiohttp.ClientSession, project: Project, pbar
     ) -> List[Execution[ModelVersionId]]:
         running_executions = []
-        models = []
+        models: dict = {}
 
         try:
             models = await self.async_get(

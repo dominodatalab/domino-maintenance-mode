@@ -97,7 +97,7 @@ class ExecutionInterface(ABC, Generic[Id]):
                 resp = await response.text()
                 if response.status != success_code:
                     raise Exception(
-                        f"API returned error ({response.status}): {resp.text}"
+                        f"API returned error ({response.status}): {resp}"
                     )
                 return await response.json()
         except Exception as e:
