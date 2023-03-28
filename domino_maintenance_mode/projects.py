@@ -33,8 +33,15 @@ async def fetch_projects() -> List[Project]:
             },
             verify_ssl=verify,
         ) as response:
+            resp = await response.text()
+            if response.status != 200:
+                raise Exception(
+                    f"API returned error ({response.status}): {resp}"
+                )
             data = await response.json()
-            logger.info(f"Found {len(data)}.")
+
+            logger.info(f"Found {len(data)} projects.")
+            logger.debug(data)
             return list(
                 map(
                     lambda project: Project(
