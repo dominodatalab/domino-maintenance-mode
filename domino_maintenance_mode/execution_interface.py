@@ -59,10 +59,13 @@ class ExecutionInterface(ABC, Generic[Id]):
         return Execution(self.id_from_value(d["_id"]), d["name"], d["owner"])
 
     def get(self, path: str, success_code: int = 200) -> dict:
-        response = self.__get_session().get(f"{self.hostname}{path}")
+        url = f"{self.hostname}{path}"
+
+        response = self.__get_session().get(url)
         if response.status_code != success_code:
             raise Exception(
-                f"API returned error ({response.status_code}): {response.text}"
+                f"API ({url})"
+                f"returned error ({response.status_code}): {response.text}"
             )
         return response.json()
 
@@ -94,10 +97,11 @@ class ExecutionInterface(ABC, Generic[Id]):
                 },
                 verify_ssl=verify,
             ) as response:
-                resp = await response.text()
                 if response.status != success_code:
+                    resp = await response.text()
                     raise Exception(
-                        f"API ({url}) returned error ({response.status}): {resp}"
+                        f"API ({url})"
+                        f"returned error ({response.status}): {resp}"
                     )
                 return await response.json()
         except Exception as e:
@@ -112,7 +116,8 @@ class ExecutionInterface(ABC, Generic[Id]):
         response = self.__get_session().post(url, json=json)
         if response.status_code != success_code:
             raise Exception(
-                f"API ({url}) returned error({response.status_code}): {response.text}"
+                f"API ({url})"
+                f"returned error ({response.status_code}): {response.text}"
             )
         return response.json()
 
@@ -124,7 +129,8 @@ class ExecutionInterface(ABC, Generic[Id]):
         response = self.__get_session().put(url, json=json)
         if response.status_code != success_code:
             raise Exception(
-                f"API ({url}) returned error ({response.status_code}): {response.text}"
+                f"API ({url})"
+                f"returned error ({response.status_code}): {response.text}"
             )
         return response.json()
 
