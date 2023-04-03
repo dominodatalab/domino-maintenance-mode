@@ -97,7 +97,7 @@ class ExecutionInterface(ABC, Generic[Id]):
                 resp = await response.text()
                 if response.status != success_code:
                     raise Exception(
-                        f"API returned error ({response.status}): {resp}"
+                        f"API ({url}) returned error ({response.status}): {resp}"
                     )
                 return await response.json()
         except Exception as e:
@@ -107,24 +107,24 @@ class ExecutionInterface(ABC, Generic[Id]):
     def post(
         self, path: str, json: Optional[dict] = None, success_code: int = 200
     ) -> dict:
-        response = self.__get_session().post(
-            f"{self.hostname}{path}", json=json
-        )
+        url = f"{self.hostname}{path}"
+
+        response = self.__get_session().post(url, json=json)
         if response.status_code != success_code:
             raise Exception(
-                f"API returned error ({response.status_code}): {response.text}"
+                f"API ({url}) returned error({response.status_code}): {response.text}"
             )
         return response.json()
 
     def put(
         self, path: str, json: Optional[dict] = None, success_code: int = 200
     ) -> dict:
-        response = self.__get_session().put(
-            f"{self.hostname}{path}", json=json
-        )
+        url = f"{self.hostname}{path}"
+
+        response = self.__get_session().put(url, json=json)
         if response.status_code != success_code:
             raise Exception(
-                f"API returned error ({response.status_code}): {response.text}"
+                f"API ({url}) returned error ({response.status_code}): {response.text}"
             )
         return response.json()
 
