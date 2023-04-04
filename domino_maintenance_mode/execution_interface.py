@@ -34,18 +34,18 @@ class ExecutionInterface(ABC, Generic[Id]):
     async_session: Optional[aiohttp.ClientSession] = None
 
     def __init__(self, **kwargs):
+        self.hostname = get_hostname()
+        self.api_key = get_api_key()
         pass
 
     def __get_session(self) -> requests.Session:
         if self.session is None:
-            api_key = get_api_key()
-            self.hostname = get_hostname()
             # TODO: Ability to trust custom certs?
             self.session = requests.Session()
             self.session.headers.update(
                 {
                     "Content-Type": "application/json",
-                    "X-Domino-Api-Key": api_key,
+                    "X-Domino-Api-Key": self.api_key,
                 }
             )
             self.session.verify = should_verify()
@@ -82,18 +82,16 @@ class ExecutionInterface(ABC, Generic[Id]):
         path: str,
         success_code: int = 200,
     ) -> dict:
-        api_key = get_api_key()
-        hostname = get_hostname()
         verify = should_verify()
 
         try:
-            url = f"{hostname}{path}"
+            url = f"{self.hostname}{path}"
 
             async with session.get(
                 url=url,
                 headers={
                     "Content-Type": "application/json",
-                    "X-Domino-Api-Key": api_key,
+                    "X-Domino-Api-Key": self.api_key,
                 },
                 verify_ssl=verify,
             ) as response:
