@@ -25,8 +25,10 @@ async def fetch_projects() -> List[Project]:
     hostname = get_hostname()
     verify = should_verify()
     async with aiohttp.ClientSession() as session:
+        url = f"{hostname}/v4/projects"
+
         async with session.get(
-            url=f"{hostname}/v4/projects",
+            url,
             headers={
                 "Content-Type": "application/json",
                 "X-Domino-Api-Key": api_key,
@@ -36,7 +38,7 @@ async def fetch_projects() -> List[Project]:
             resp = await response.text()
             if response.status != 200:
                 raise Exception(
-                    f"API returned error ({response.status}): {resp}"
+                    f"API ({url}) returned error ({response.status}): {resp}"
                 )
             data = await response.json()
 

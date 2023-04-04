@@ -25,6 +25,7 @@ class Interface(ExecutionInterface[ScheduledJobId]):
     concurrency: int
 
     def __init__(self, concurrency=1, **kwargs):
+        super().__init__()
         self.concurrency = concurrency
 
     def id_from_value(self, v) -> ScheduledJobId:
