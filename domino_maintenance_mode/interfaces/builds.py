@@ -10,6 +10,9 @@ from domino_maintenance_mode.projects import Project
 
 
 class Interface(ExecutionInterface[str]):
+    def __init__(self, **kwargs):
+        super().__init__()
+
     def singular(self) -> str:
         return "ImageBuild"
 

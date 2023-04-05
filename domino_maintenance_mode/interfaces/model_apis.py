@@ -45,6 +45,7 @@ class Interface(ExecutionInterface[ModelVersionId]):
         concurrency=1,
         **kwargs,
     ):
+        super().__init__()
         self.page_size = models_page_size
         self.concurrency = concurrency
 

@@ -33,6 +33,9 @@ class AppId:
 
 
 class Interface(ExecutionInterface[AppId]):
+    def __init__(self, **kwargs):
+        super().__init__()
+
     def id_from_value(self, v) -> AppId:
         return AppId(**v)
 
