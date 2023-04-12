@@ -20,6 +20,12 @@ Please file in a ticket to the Platform Services team.
 
 * Any `error` log levels or above require manual inspection to determine the state of an execution or executions.
 
+# Installation
+
+`pip install git+https://github.com/dominodatalab/domino_maintenance_mode.git`
+
+Note: Currently requires python < 3.11
+
 # Configuration
 
 You must set some environment variables to configure access to the Domino deployment.
