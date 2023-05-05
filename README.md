@@ -22,7 +22,7 @@ Please file in a ticket to the Platform Services team.
 
 # Installation
 
-`pip install git+https://github.com/dominodatalab/domino_maintenance_mode.git`
+`pip install git+https://github.com/dominodatalab/domino-maintenance-mode.git`
 
 Note: Currently requires python < 3.11
 
