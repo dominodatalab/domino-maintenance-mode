@@ -76,9 +76,9 @@ class Interface(ExecutionInterface[WorkspaceId]):
                 )
                 if len(workspaces) >= data["totalEntries"]:
                     break
-                offset += 1
+                offset += self.page_size
                 # If the list of workspaces has changed, loop again
-                if offset * self.page_size >= data["totalEntries"]:
+                if offset >= data["totalEntries"]:
                     raise Exception(
                         (
                             "Number of Workspaces found did not match"
