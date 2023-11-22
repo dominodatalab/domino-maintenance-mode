@@ -28,6 +28,7 @@ class Manager:
 
     def __init__(
         self,
+        service: str = None,
         batch_size: int = 5,
         batch_interval_s: int = 5,
         max_failures: int = 5,
@@ -37,6 +38,10 @@ class Manager:
         self.batch_interval_s = batch_interval_s
         self.grace_period_s = grace_period_s
         self.max_failures = max_failures
+        self.service = service
+
+    def get_service(self):
+        return self.service
 
     def stop(self, interface: ExecutionInterface, executions: List[Execution]):
         self.__toggle_executions(
