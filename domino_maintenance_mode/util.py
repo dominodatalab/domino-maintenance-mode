@@ -1,16 +1,47 @@
 import asyncio
 import os
+from typing import Dict
+
+AUTH_TOKEN_ENV = "DOMINO_AUTH_TOKEN"
+API_KEY_ENV = "DOMINO_API_KEY"
 
 
-def get_api_key() -> str:
-    if "DOMINO_API_KEY" not in os.environ:
-        raise Exception(
-            (
-                "Please specify Domino API key using "
-                "'DOMINO_API_KEY' environment variable."
-            )
+def _is_jwt(value: str) -> bool:
+    """Keycloak bearer tokens (e.g. Personal Access Tokens) are JWTs:
+    three dot-separated segments with an 'eyJ' header prefix. Legacy
+    Domino API keys are opaque strings and never match this shape."""
+    return value.startswith("eyJ") and len(value.split(".")) == 3
+
+
+def get_auth_headers() -> Dict[str, str]:
+    """Resolve the Domino credential and return its auth header.
+
+    Resolution order:
+    1. DOMINO_AUTH_TOKEN -> 'Authorization: Bearer <token>' (a Personal
+       Access Token, available since Domino 6.3.0, or any Keycloak
+       bearer token).
+    2. DOMINO_API_KEY -> 'X-Domino-Api-Key' (legacy admin API key).
+       A JWT-shaped value here is sent as a bearer token instead: a PAT
+       placed in DOMINO_API_KEY would otherwise be sent as a legacy key
+       and rejected by the API as an anonymous request.
+    """
+    token = os.environ.get(AUTH_TOKEN_ENV)
+    if token:
+        return {"Authorization": f"Bearer {token}"}
+
+    api_key = os.environ.get(API_KEY_ENV)
+    if api_key:
+        if _is_jwt(api_key):
+            return {"Authorization": f"Bearer {api_key}"}
+        return {"X-Domino-Api-Key": api_key}
+
+    raise Exception(
+        (
+            "No Domino credential found. Set 'DOMINO_AUTH_TOKEN' to a "
+            "Personal Access Token (Domino 6.3.0+), or "
+            "'DOMINO_API_KEY' to an administrator's legacy API key."
         )
-    return os.environ["DOMINO_API_KEY"]
+    )
 
 
 def get_hostname() -> str:
