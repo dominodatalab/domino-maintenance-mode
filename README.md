@@ -18,7 +18,7 @@ Easily place Domino in maintenance mode for upgrades and restore afterwards.
 
 `pip install git+https://github.com/dominodatalab/domino-maintenance-mode.git`
 
-Note: Currently requires python < 3.11
+Note: Requires Python 3.10+
 
 # Configuration
 
