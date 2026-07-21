@@ -8,7 +8,7 @@ import requests
 
 from domino_maintenance_mode.projects import Project
 from domino_maintenance_mode.util import (
-    get_api_key,
+    get_auth_headers,
     get_hostname,
     should_verify,
 )
@@ -35,7 +35,7 @@ class ExecutionInterface(ABC, Generic[Id]):
 
     def __init__(self, **kwargs):
         self.hostname = get_hostname()
-        self.api_key = get_api_key()
+        self.auth_headers = get_auth_headers()
         pass
 
     def __get_session(self) -> requests.Session:
@@ -45,7 +45,7 @@ class ExecutionInterface(ABC, Generic[Id]):
             self.session.headers.update(
                 {
                     "Content-Type": "application/json",
-                    "X-Domino-Api-Key": self.api_key,
+                    **self.auth_headers,
                 }
             )
             self.session.verify = should_verify()
@@ -91,7 +91,7 @@ class ExecutionInterface(ABC, Generic[Id]):
                 url=url,
                 headers={
                     "Content-Type": "application/json",
-                    "X-Domino-Api-Key": self.api_key,
+                    **self.auth_headers,
                 },
                 verify_ssl=verify,
             ) as response:

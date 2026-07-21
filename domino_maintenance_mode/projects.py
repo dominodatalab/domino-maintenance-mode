@@ -5,7 +5,7 @@ from typing import List
 import aiohttp
 
 from domino_maintenance_mode.util import (
-    get_api_key,
+    get_auth_headers,
     get_hostname,
     should_verify,
 )
@@ -21,7 +21,7 @@ class Project:
 
 
 async def fetch_projects() -> List[Project]:
-    api_key = get_api_key()
+    auth_headers = get_auth_headers()
     hostname = get_hostname()
     verify = should_verify()
     async with aiohttp.ClientSession() as session:
@@ -31,7 +31,7 @@ async def fetch_projects() -> List[Project]:
             url,
             headers={
                 "Content-Type": "application/json",
-                "X-Domino-Api-Key": api_key,
+                **auth_headers,
             },
             verify_ssl=verify,
         ) as response:
