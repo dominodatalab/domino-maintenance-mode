@@ -28,7 +28,7 @@ class Manager:
 
     def __init__(
         self,
-        service: str = None,
+        service: Optional[str] = None,
         batch_size: int = 5,
         batch_interval_s: int = 5,
         max_failures: int = 5,
@@ -148,7 +148,7 @@ class Manager:
                     )
                 except Exception as e:
                     if is_dataclass(execution._id):
-                        key = execution._id._id
+                        key = getattr(execution._id, "_id")
                     else:
                         key = execution._id
                     failures[key] = failures.get(key, 0) + 1
