@@ -15,7 +15,11 @@ from domino_maintenance_mode.projects import Project
 logger = logging.getLogger(__name__)
 
 # From https://github.com/cerebrotech/domino/blob/develop/common-core/src/main/scala/domino/common/models/RunStatus.scala  # noqa: E501
-STOPPED_STATES = {"Stopped", "Succeeded", "Failed", "Error"}
+# "Never Started" is an app-level status (a created-but-never-launched App)
+# not present in RunStatus; it is not a running state, so it must be skipped.
+# Without it these Apps leak past the filter and (when their publisher is a
+# deactivated user) error out on parse instead of being cleanly excluded.
+STOPPED_STATES = {"Stopped", "Succeeded", "Failed", "Error", "Never Started"}
 RUNNING_STATES = {"Running", "Serving"}
 
 

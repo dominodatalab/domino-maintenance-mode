@@ -41,6 +41,13 @@ dmm snapshot my-snapshot-file.json
 
 This will create a timestamped snapshot file which you will need to use in subsequent steps.
 
+On large deployments, if the snapshot fails with `504 Gateway Time-out`, lower
+the request concurrency (default `10`):
+
+```
+dmm snapshot --concurrency 3 my-snapshot-file.json
+```
+
 * Stop all running Apps, Model APIs, Restartable Workspaces, and Scheduled Jobs:
 
 ```
