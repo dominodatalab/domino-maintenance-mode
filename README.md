@@ -27,7 +27,7 @@ You must set some environment variables to configure access to the Domino deploy
 * `DOMINO_AUTH_TOKEN` - An administrator's Personal Access Token (Domino 6.3.0+). Sent as `Authorization: Bearer`. Takes precedence over `DOMINO_API_KEY` when both are set.
 * `DOMINO_API_KEY` - An administrator's legacy Domino API key. Sent as `X-Domino-Api-Key`. If the value is a JWT (a PAT pasted here by mistake), it is sent as a Bearer token instead.
 * `DOMINO_HOSTNAME` - The URL to your Domino deployment, including protocol (and port if non-standard).
-* `DOMINO_SSL_NO_VERIFY` - **Optional** Set to "true" to disabled server certificate verification.
+* `DOMINO_SSL_NO_VERIFY` - **Optional** Set to "true" to disable server certificate verification.
 
 Note on PATs: a user's Personal Access Tokens are all invalidated when their roles change (immediately when changed by an admin; at next login when synced from the IdP). For long-running `shutdown`/`restore` operations, avoid role changes on the token's owner mid-operation, or use a legacy API key.
 
