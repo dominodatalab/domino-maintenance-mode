@@ -54,6 +54,12 @@ dmm snapshot --concurrency 3 my-snapshot-file.json
 dmm shutdown my-snapshot-file.json
 ```
 
+Pass `--yes` (or `-y`) to skip the confirmation prompt, for scripted use:
+
+```
+dmm shutdown --yes my-snapshot-file.json
+```
+
 <!-- * [OPTIONAL] You may wait for Jobs and Image Builds to complete themselves. If you would like to manually shut them down:
 
 **Depending on the fault-tolerance of the user code, data may be lost with this operation.**
