@@ -158,6 +158,16 @@ def validate_services(ctx, param, value):
     f"{list(__get_execution_interfaces().keys())}",
     callback=validate_services,
 )
+@click.option(
+    "-y",
+    "--yes",
+    is_flag=True,
+    default=False,
+    help=(
+        "Skip the interactive confirmation prompt. "
+        "Use for non-interactive / scripted invocations."
+    ),
+)
 def shutdown(snapshot, **kwargs):
     """Stop running Apps, Model APIs, Durable Workspaces, and Scheduled Jobs.
 
@@ -215,6 +225,16 @@ cli.add_command(shutdown)
     type=click.IntRange(min=0),
     default=600,
     help="Amount of time to wait for executions to complete.",
+)
+@click.option(
+    "-y",
+    "--yes",
+    is_flag=True,
+    default=False,
+    help=(
+        "Skip the interactive confirmation prompt. "
+        "Use for non-interactive / scripted invocations."
+    ),
 )
 def restore(snapshot, **kwargs):
     """Restore previously running Apps, Model APIs, and Scheduled Jobs.

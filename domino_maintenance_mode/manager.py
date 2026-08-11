@@ -24,6 +24,7 @@ class Manager:
     batch_interval_s: int
     max_failures: int
     grace_period_s: int
+    yes: bool
     failures: dict = dict()
 
     def __init__(
@@ -33,12 +34,14 @@ class Manager:
         batch_interval_s: int = 5,
         max_failures: int = 5,
         grace_period_s: int = 600,
+        yes: bool = False,
     ):
         self.batch_size = batch_size
         self.batch_interval_s = batch_interval_s
         self.grace_period_s = grace_period_s
         self.max_failures = max_failures
         self.service = service
+        self.yes = yes
 
     def get_service(self):
         return self.service
@@ -98,6 +101,18 @@ class Manager:
             with open(path, "w") as f:
                 json.dump(data, f)
 
+    def __confirm(
+        self, verb: str, singular: str, executions: List[Execution]
+    ) -> bool:
+        if self.yes:
+            return True
+        return input(
+            (
+                f"Are you sure you want to {verb} these"
+                f" {len(executions)} {singular}s? "
+            )
+        ).lower() in {"y", "yes"}
+
     def __toggle_executions(
         self,
         verb: str,
@@ -106,12 +121,7 @@ class Manager:
         wait_func,
         executions: List[Execution],
     ):
-        if input(
-            (
-                f"Are you sure you want to {verb} these"
-                f" {len(executions)} {singular}s? "
-            )
-        ).lower() not in {"y", "yes"}:
+        if not self.__confirm(verb, singular, executions):
             return
         session = f"{singular}-{verb}-{datetime.datetime.now().isoformat()}"
         result = self.__batch_call(verb, singular, toggle_func, executions)
